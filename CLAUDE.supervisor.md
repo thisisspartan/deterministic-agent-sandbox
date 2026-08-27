@@ -15,7 +15,7 @@ cwd сессии — корень проекта, а Claude Code не автоз
 
 ## Layout проекта
 
-- **Корень проекта (`/home/hermes/darkcast/`):** `CLAUDE.supervisor.md`, `CONTEXT.md`, `P0-launch.sh`, `specs/`, подпапка `stanok/`. Корень — НЕ git-репо.
+- **Корень проекта (`/home/hermes/darkcast/`):** `CLAUDE.supervisor.md`, `CONTEXT.md`, `P0-launch.sh`, `specs/`, подпапка `stanok/`. Корень — git-репо, `stanok/` — вложенный git-репо (gitlink).
 - **Зона супервайзера:** `CONTEXT.md` и `specs/` (постоянные факты, бэклог, спеки). Станок их не видит.
 - **Зона станка (`stanok/`):** git-репо и рабочее место станка (`CLAUDE.md`, `src/`, `tests/`, `docs/`, `tickets/`, `hooks/`, `launch.sh`, `evidence/`).
 
