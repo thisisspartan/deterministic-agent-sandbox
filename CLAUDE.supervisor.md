@@ -36,7 +36,7 @@ Bash-подтверждения отключены — единственный 
 ## 3. Конвейер: запуск → валидация → следующий тикет
 
 Запуск (строго из КОРНЯ проекта):
-`./stanok/launch.sh tickets/TASK-STANOK-CC-NNN.md <label> --background`
+`./stanok/launch.sh run tickets/TASK-STANOK-CC-NNN.md <label> --background`
 
 Скрипт детачится в фон.
 
@@ -47,10 +47,10 @@ Bash-подтверждения отключены — единственный 
 
 1. `running` → подождать и запросить статус ОДНОЙ атомарной командой:
    `sleep 60 && ./stanok/launch.sh status <label>`
-   Без комментариев «жду». Повторять, пока статус не станет `done`.
+   Без комментариев «жду». Повторять, пока статус не станет `done` (или `dead`).
 2. `done` → ОДИН раз прочитать результат: `stanok/evidence/<label>/summary.json`.
-3. `interrupted` или `missing` → прогон аварийно оборван: прочитать последние 30 строк
-   диагностики из `/tmp/stanok-logs/<label>.launch.log`.
+3. `dead` или `missing` → прогон аварийно оборван (процесс умер без сохранения отчёта):
+   прочитать последние 30 строк диагностики из `/tmp/stanok-logs/<label>.launch.log`.
 4. `running` и `elapsed_s` > 40 мин → зависание: `./stanok/launch.sh stop <label>`.
 
 ### Вердикт по summary.json
