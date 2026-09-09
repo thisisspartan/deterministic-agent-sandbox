@@ -60,7 +60,7 @@ export CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS="1"
 export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
-# Context / compaction (n_ctx=106240, output reserve 24k)
+# Context / compaction (n_ctx=123136, output reserve 24k)
 # Канон: 123000/12000/20000 — держать в синхроне со stanok/.claude/settings.stanok.json
 # ---------------------------------------------------------------------------
 export CLAUDE_CODE_AUTO_COMPACT_WINDOW="123000"
@@ -115,9 +115,10 @@ else
                 python3 -c '
 import json, sys
 d=json.load(sys.stdin)
+g=d.get("default_generation_settings", {})
 print(
     d.get("model_alias", "?"),
-    d.get("n_ctx", "?"),
+    g.get("n_ctx", d.get("n_ctx", "?")),
     d.get("total_slots", "?")
 )'
             )
