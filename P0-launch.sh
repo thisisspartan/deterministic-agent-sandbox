@@ -61,13 +61,14 @@ export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
 # Context / compaction (n_ctx=106240, output reserve 24k)
+# Канон: 123000/12000/20000 — держать в синхроне со stanok/.claude/settings.stanok.json
 # ---------------------------------------------------------------------------
-export CLAUDE_CODE_AUTO_COMPACT_WINDOW="120000"
+export CLAUDE_CODE_AUTO_COMPACT_WINDOW="123000"
 export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="95"
 export CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS="16000"
-export MAX_MCP_OUTPUT_TOKENS="123000"
+export MAX_MCP_OUTPUT_TOKENS="12000"
 export API_TIMEOUT_MS="600000"
-export CLAUDE_CODE_MAX_OUTPUT_TOKENS="10000"
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS="20000"
 export CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS="1"
 export CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1
 # ---------------------------------------------------------------------------
