@@ -71,7 +71,11 @@ export CLAUDE_CODE_SUBAGENT_MODEL="$MODEL"
 export http_proxy="$PROXY"
 export https_proxy="$PROXY"
 export all_proxy=""
-export no_proxy="$HOST,localhost,127.0.0.1"
+if [[ "$HOST" == "127.0.0.1" ]]; then
+    export no_proxy="127.0.0.1,localhost"
+else
+    export no_proxy="$HOST,localhost,127.0.0.1"
+fi
 
 # ---------------------------------------------------------------------------
 # Local / offline-friendly Claude Code behavior
