@@ -1,0 +1,3 @@
+[submodule "stanok"]
+	path = stanok
+	url = git@github.com:thisisspartan/deterministic-agent-sandbox-stanok.git
