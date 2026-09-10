@@ -1,53 +1,53 @@
-# TASK-STANOK-CC-050 — архитектурные нестыковки, Ticket Shadowing, DoS-защита, очистка хоста
+# TASK-STANOK-CC-050 — architecture mismatches, Ticket Shadowing, supervisor DoS protection, host script cleanup
 
-Статус: `[x] DONE` (выполнено супервайзером на хосте — инфраструктурные правки, не код проекта)
+Status: `[x] DONE` (executed by the supervisor on the host — infrastructure changes, not project code)
 
-## 1. CLAUDE.supervisor.md — DoS-защита (Role-Leak)
+## 1. CLAUDE.supervisor.md — DoS protection (Role-Leak)
 
-§4.3: в список фатальных инфраструктурных кодов добавлен `rc=24` (role leak — `CLAUDE.md`
-в родительском репо) наравне с `rc=20/21/22`. `rc=24` эскалируется человеку немедленно,
-3 ретрая на нём не сжигаются.
+§4.3: `rc=24` (role leak — `CLAUDE.md` in the parent repo) added to the list of fatal
+infrastructure codes alongside `rc=20/21/22`. `rc=24` is escalated to the human immediately;
+3 retries are not burned on it.
 
 ## 2. stanok/launcher/stanok.py — Ticket Shadowing
 
-`_resolve_ticket`: порядок кандидатов приведён к README (project root -> machine root -> as given).
-Раньше machine root имел приоритет — одинаковый относительный путь в `stanok/tickets/`
-перекрывал корневой `tickets/`.
+`_resolve_ticket`: candidate order aligned with the README (project root -> machine root -> as given).
+Previously the machine root had priority — an identical relative path in `stanok/tickets/`
+would shadow the root `tickets/`.
 
 ## 3. stanok/hooks/verifier.sh — stored_hash fail-closed
 
-- Убран слепой `|| true`: сбой чтения lock-файла → явная ошибка в stderr + `return 1`.
-- Оба call-sites (Phase B/C) теперь `|| { emit "VERIFY: FAIL (...CORRUPT...)"; exit 1; }`
-  (хук работает под `set -uo pipefail` без `-e` — без guard сбой подстановки был бы
-  проглочен, и битый lock дал бы тихий PASS).
+- The blind `|| true` is gone: a lock-file read failure → explicit stderr error + `return 1`.
+- Both call sites (Phase B/C) now do `|| { emit "VERIFY: FAIL (...CORRUPT...)"; exit 1; }`
+  (the hook runs under `set -uo pipefail` without `-e` — without the guard a substitution
+  failure would be swallowed and a corrupted lock would give a silent PASS).
 
-## 4. stanok/launch.sh — рефакторинг имени
+## 4. stanok/launch.sh — variable rename
 
-`PROJECT_ROOT` → `STANOK_ROOT` (переменная хранит путь к сабмодулю `stanok/`).
+`PROJECT_ROOT` → `STANOK_ROOT` (the variable holds the path to the `stanok/` submodule).
 
-## 5. stanok/sandbox-run.sh — мёртвый bind
+## 5. stanok/sandbox-run.sh — dead bind
 
-Удалена строка `--ro-bind "$REPO_ROOT/.git/config" ...` (весь `.git` уже смонтирован
-`--ro-bind` строкой выше).
+Removed the `--ro-bind "$REPO_ROOT/.git/config" ...` line (the whole `.git` is already
+`--ro-bind` on the line above).
 
-## 6. P0-launch.sh — надёжность
+## 6. P0-launch.sh — reliability
 
-- `no_proxy` НЕ тронут (`192.168.8.131,localhost,127.0.0.1` — обход прокси для сервера).
-- Упрощён server-check: убрана косвенность `MODEL_LINE`/`case`, пустой ответ curl →
-  немедленный `exit 1`.
-- Fallback при падении парсинга JSON: `read ... || { MODEL_NAME="?"; ... }`.
+- `no_proxy` untouched (`192.168.8.131,localhost,127.0.0.1` — proxy bypass for the server).
+- Server check simplified: the `MODEL_LINE`/`case` indirection is gone, an empty curl
+  response → immediate `exit 1`.
+- Fallback on JSON parse failure: `read ... || { MODEL_NAME="?"; ... }`.
 
-## 7. stanok/README.md — синхронизация
+## 7. stanok/README.md — sync
 
-Structure: `.git` монтируется строго read-only (`--ro-bind`); удалено устаревшее
-упоминание tmpfs на `.git/hooks`. Порядок резолвинга тикетов (:31) уже совпадает с кодом.
+Structure: `.git` is mounted strictly read-only (`--ro-bind`); the outdated tmpfs mention
+for `.git/hooks` is removed. The ticket resolution order (:31) now matches the code.
 
-## Смоки (ЭТАП 3)
+## Smokes (stage 3)
 
-- resolve-priority: тикет в parent и в machine root → резолвится в parent (SMOKE-RESOLVE-OK),
-  артефакты удалены, `stanok/tickets` убрана.
-- stored_hash (sed-экстракция): missing → пусто/rc=0; valid lock → хэш; каталог вместо
-  lock → rc=1 + stderr (SMOKE-HASH-MISSING-OK, SMOKE-HASH-READ-OK, SMOKE-HASH-CORRUPT-OK).
+- resolve-priority: a ticket in both parent and machine root resolves to the parent
+  (SMOKE-RESOLVE-OK), artifacts removed, `stanok/tickets` removed.
+- stored_hash (sed extraction): missing → empty/rc=0; valid lock → hash; unreadable file
+  → rc=1 + stderr (SMOKE-HASH-MISSING-OK, SMOKE-HASH-READ-OK, SMOKE-HASH-CORRUPT-OK).
 - `bash -n` launch.sh / sandbox-run.sh / P0-launch.sh — OK.
 - `DOCTOR_EXPECT_NO_CLOUD=1 bash hooks/doctor.sh` → 14 ok, 0 fail.
-- `git status --porcelain` — оба дерева чистые.
+- `git status --porcelain` — both trees clean.

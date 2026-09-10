@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Интерактивный Claude Code -> локальный llama-server (Qwen3.8-27B-MTP).
-# Точка входа в интерактивную сессию (грилл/координация) изнутри скелета.
+# Interactive Claude Code -> local llama-server (Qwen3.8-27B-MTP).
+# Entry point to an interactive session (grill/coordination) from inside the skeleton.
 #
-# Переносимость: НИКАКИХ путей в репо. Внешние инструменты/константы —
-# переопределяются env (дефолты для этой машины):
-#   STANOK_SERVER_URL  — адрес llama-server (дефолт http://192.168.8.131:8080)
-#   STANOK_MODEL       — имя модели (дефолт Qwen3.8-27B-MTP)
-#   STANOK_PROXY       — прокси для веб-тулингa (дефолт http://192.168.8.131:8118)
-#   CLAUDE_BIN         — бинарь claude (дефолт /home/hermes/.npm-global/bin/claude)
-#   SEARCH_ENV_FILE    — .env с ключами веб-MCP (дефолт /home/hermes/git/agnt/.env)
+# Portability: NO repo paths. External tools/constants are
+# overridden by env (defaults for this machine):
+#   STANOK_SERVER_URL  — llama-server address (default http://192.168.8.131:8080)
+#   STANOK_MODEL       — model name (default Qwen3.8-27B-MTP)
+#   STANOK_PROXY       — proxy for web tooling (default http://192.168.8.131:8118)
+#   CLAUDE_BIN         — claude binary (default /home/hermes/.npm-global/bin/claude)
+#   SEARCH_ENV_FILE    — .env with web-MCP keys (default /home/hermes/git/agnt/.env)
 #
-# Запуск: ./P0-launch.sh [аргументы claude]
+# Run: ./P0-launch.sh [claude arguments]
 set -u
 set -o pipefail
 
 # ---------------------------------------------------------------------------
-# Внешние константы (переопределяются env)
+# External constants (overridable via env)
 # ---------------------------------------------------------------------------
 SERVER_URL="${STANOK_SERVER_URL:-http://192.168.8.131:8080}"
 MODEL="${STANOK_MODEL:-Qwen3.8-27B-MTP}"
@@ -61,7 +61,7 @@ export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
 # Context / compaction (n_ctx=123136, output reserve 24k)
-# Канон: 123000/12000/20000 — держать в синхроне со stanok/.claude/settings.stanok.json
+# Canon: 123000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
 # ---------------------------------------------------------------------------
 export CLAUDE_CODE_AUTO_COMPACT_WINDOW="123000"
 export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="95"
@@ -147,11 +147,12 @@ if [[ -n "$SEARCH_KEY_COUNT" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Супервайзор-роль контроль-рума (L1).
-# Родительский CLAUDE.md переименован в CLAUDE.supervisor.md: иначе Claude Code
-# автозагружает его И в станок (cwd=stanok — подкаталог корня проекта), и станок
-# начинает думать, что он «L1 supervisor» (ролевой утёк). Контроль-рум же теперь
-# получает роль ЯВНО, файлом, а не через автозагрузку.
+# Control-room supervisor role (L1).
+# The parent CLAUDE.md is renamed to CLAUDE.supervisor.md: otherwise Claude Code
+# would auto-load it into the machine as well (cwd=stanok — a subdirectory of the
+# project root), and the machine would start thinking it is the "L1 supervisor"
+# (role leak). The control room now receives the role EXPLICITLY, as a file,
+# not via auto-loading.
 # ---------------------------------------------------------------------------
 ROLE_FILE="$(cd "$(dirname "$0")" && pwd)/CLAUDE.supervisor.md"
 if [[ -f "$ROLE_FILE" ]]; then
