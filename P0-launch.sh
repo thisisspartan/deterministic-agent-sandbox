@@ -104,15 +104,24 @@ fi
 # ---------------------------------------------------------------------------
 # Pre-flight: verify the local llama-server endpoint
 # ---------------------------------------------------------------------------
+MODEL_NAME="?"
+SERVER_CTX="?"
+SERVER_SLOTS="?"
 if [[ -n "${STANOK_SKIP_SERVER_CHECK:-}" ]]; then
     MODEL_LINE="? (server check skipped)"
 else
     PROPS="$(curl -s --noproxy '*' --max-time 5 "$SERVER_URL/props" 2>/dev/null || true)"
-    if [[ -n "$PROPS" ]]; then
-        if command -v python3 >/dev/null 2>&1; then
-            read -r MODEL_NAME SERVER_CTX SERVER_SLOTS < <(
-                printf '%s' "$PROPS" |
-                python3 -c '
+    if [[ -z "$PROPS" ]]; then
+        printf '\033[31mERROR: local llama-server is unavailable @ %s\033[0m\n' \
+            "$SERVER_URL" >&2
+        printf '\033[33mStart llama-server first, or set STANOK_SKIP_SERVER_CHECK=1.\033[0m\n' \
+            >&2
+        exit 1
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        read -r MODEL_NAME SERVER_CTX SERVER_SLOTS < <(
+            printf '%s' "$PROPS" |
+            python3 -c '
 import json, sys
 d=json.load(sys.stdin)
 g=d.get("default_generation_settings", {})
@@ -121,27 +130,10 @@ print(
     g.get("n_ctx", d.get("n_ctx", "?")),
     d.get("total_slots", "?")
 )'
-            )
-        else
-            MODEL_NAME="?"
-            SERVER_CTX="?"
-            SERVER_SLOTS="?"
-        fi
-        MODEL_LINE="$MODEL_NAME @ $SERVER_URL (n_ctx=$SERVER_CTX slots=$SERVER_SLOTS)"
-    else
-        MODEL_LINE="UNAVAILABLE @ $SERVER_URL"
+        ) || { MODEL_NAME="?"; SERVER_CTX="?"; SERVER_SLOTS="?"; }
     fi
+    MODEL_LINE="$MODEL_NAME @ $SERVER_URL (n_ctx=$SERVER_CTX slots=$SERVER_SLOTS)"
 fi
-
-case "$MODEL_LINE" in
-    *"UNAVAILABLE"*)
-        printf '\033[31mERROR: local llama-server is unavailable @ %s\033[0m\n' \
-            "$SERVER_URL" >&2
-        printf '\033[33mStart llama-server first, or set STANOK_SKIP_SERVER_CHECK=1.\033[0m\n' \
-            >&2
-        exit 1
-        ;;
-esac
 
 echo "Local Claude Code -> $MODEL"
 echo "  endpoint : $ANTHROPIC_BASE_URL"
