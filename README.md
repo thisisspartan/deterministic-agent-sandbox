@@ -37,8 +37,8 @@ flowchart TD
         R["Runner: launcher/stanok.py"]
         GATE["Fail-closed gates: role-leak rc=24 · lock rc=21 · dirty-tree rc=22 · server rc=20"]
         SES["Claude session (cwd=stanok): coder → tester → reviewer"]
-        HOOKS["Hooks on every Write/Edit: malware-scan · verifier · path-guard · test-lock"]
-        TEST["node tests/*.test.js"]
+        HOOKS["Hooks: read-guard · bash-gate (PreToolUse) · verifier (PostToolUse, RED freeze)"]
+        TEST["scripts/run.sh test — the one canonical runner"]
         EV["evidence/label/summary.json — rc + verifier PASS/FAIL"]
         SH --> R --> GATE --> SES --> HOOKS --> TEST --> EV
     end
