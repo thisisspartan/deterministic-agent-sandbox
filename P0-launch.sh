@@ -4,24 +4,50 @@
 #
 # Portability: NO repo paths. External tools/constants are
 # overridden by env (defaults for this machine):
-#   STANOK_SERVER_URL  — llama-server address (default http://192.168.8.131:8080)
+#   STANOK_SERVER_URL  — llama-server address (default http://<host>:8080)
 #   STANOK_MODEL       — model name (default Qwen3.8-27B-MTP)
-#   STANOK_PROXY       — proxy for web tooling (default http://192.168.8.131:8118)
-#   CLAUDE_BIN         — claude binary (default /home/hermes/.npm-global/bin/claude)
-#   SEARCH_ENV_FILE    — .env with web-MCP keys (default /home/hermes/git/agnt/.env)
+#   STANOK_PROXY       — proxy for web tooling (default http://<host>:8118)
+#   CLAUDE_BIN         — claude binary (default $HOME/.npm-global/bin/claude)
+#   SEARCH_ENV_FILE    — .env with web-MCP keys (default $HOME/git/agnt/.env)
 #
-# Run: ./P0-launch.sh [claude arguments]
+# Run: ./P0-launch.sh [--host <ip>] [claude arguments]
 set -u
 set -o pipefail
 
 # ---------------------------------------------------------------------------
+# Host flag: the inference-server host (no hardcoded IP).
+# --host <ip> sets the server host; env overrides (STANOK_SERVER_URL /
+# STANOK_PROXY) still win. All other arguments pass through to claude.
+# ---------------------------------------------------------------------------
+HOST="127.0.0.1"
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --host)
+            HOST="${2:?--host requires an IP address}"
+            shift 2
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${ARGS[@]}"
+
+# ---------------------------------------------------------------------------
 # External constants (overridable via env)
 # ---------------------------------------------------------------------------
-SERVER_URL="${STANOK_SERVER_URL:-http://192.168.8.131:8080}"
+SERVER_URL="${STANOK_SERVER_URL:-http://$HOST:8080}"
 MODEL="${STANOK_MODEL:-Qwen3.8-27B-MTP}"
-PROXY="${STANOK_PROXY:-http://192.168.8.131:8118}"
-CLAUDE_BIN="${CLAUDE_BIN:-/home/hermes/.npm-global/bin/claude}"
-SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-/home/hermes/git/agnt/.env}"
+PROXY="${STANOK_PROXY:-http://$HOST:8118}"
+CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
+SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-$HOME/git/agnt/.env}"
+
+# Propagate the endpoint to the machine: stanok/launcher/stanok.py reads
+# STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
+export STANOK_SERVER_URL="$SERVER_URL"
+export STANOK_PROXY="$PROXY"
 
 # ---------------------------------------------------------------------------
 # Local Anthropic-compatible endpoint
@@ -45,7 +71,7 @@ export CLAUDE_CODE_SUBAGENT_MODEL="$MODEL"
 export http_proxy="$PROXY"
 export https_proxy="$PROXY"
 export all_proxy=""
-export no_proxy="192.168.8.131,localhost,127.0.0.1"
+export no_proxy="$HOST,localhost,127.0.0.1"
 
 # ---------------------------------------------------------------------------
 # Local / offline-friendly Claude Code behavior
