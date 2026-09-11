@@ -99,6 +99,29 @@ interactive/supervisor usage (`P0-launch.sh`). The `--bg` half of Q9 is untestab
 | `--append-system-prompt-file` | Q9/F6 | Present (V7). |
 | `--brief` (SendUserMessage tool) | Q5 | Unexplored; candidate for agent→user messaging. |
 
+### 5.1 Track A probes — executed 2026-09-11 on 2.1.88
+
+All three probes ran headless against the local llama-server, `--settings '{}'`,
+raw output in `stanok/evidence/agent-view-research/`.
+
+- **Q6 structured output — PASS.** `claude -p --output-format json --json-schema
+  '{"type":"object","properties":{"word":{"type":"string"},"n":{"type":"integer"}},"required":["word","n"]}'
+  "Reply with the word ALPHA and the number 3."` →
+  `"structured_output":{"word":"ALPHA","n":3}` (result envelope also carries
+  `usage`, `total_cost_usd`, `session_id`). The local model satisfies the schema;
+  this is a viable native path for a typed result, though still not an incremental
+  per-turn `summary.json`.
+- **Q7 worktree isolation — PASS.** In a fresh git repo, `claude -w wtprobe -p …`
+  created `<repo>/.claude/worktrees/wtprobe` on branch `worktree-wtprobe` and ran
+  the session there (returned `OK`). Per-session worktree isolation exists in
+  2.1.88 with no upgrade.
+  - **Caveat for the machine:** the worktree lives *under `<repo>/.claude/`*, which
+    `sandbox-run.sh` mounts **read-only**. As configured today, `-w` inside the
+    machine's sandbox would fail to write the worktree. Adopting `-w` for the
+    machine therefore means granting a writable carve-out for `.claude/worktrees/`
+    (a sandbox change), or relocating worktrees outside the repo.
+- **Q5 retry-injection — PASS** (see §4).
+
 ## 6. Decision
 
 **NO-GO for the protocol as written on this machine.** Agent View is unavailable in
