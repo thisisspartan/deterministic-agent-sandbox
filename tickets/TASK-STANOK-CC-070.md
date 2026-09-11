@@ -39,10 +39,12 @@ own proxy env into Bash commands when `network.allowedDomains` is set.
 
 ## 4. Sweep: dead code (#259)
 - `launcher/stanok.py`: removed unused `import shlex`.
-- Flagged (NOT removed — SEC-adjacent, operator decision): `hooks/doctor.sh`
-  cloud-silence check greps `evidence/cloud-review-*.jsonl`, but `cloud_review()`
-  no longer exists in the runner → the check can never fire. README says
-  "expected: 14 ok" only when `DOCTOR_EXPECT_NO_CLOUD=1`; removing it makes 13.
+- `hooks/doctor.sh`: REMOVED the cloud-silence check (operator decision,
+  2026-09-11). It grepped `evidence/cloud-review-*.jsonl`, but `cloud_review()`
+  no longer exists in the runner and nothing writes those files (only the
+  hardcoded `cloud_calls: 0` literal remains in `summary.json`) → the check could
+  never fire. Also dropped the `DOCTOR_EXPECT_NO_CLOUD`/`DOCTOR_CLOUD_WINDOW_H`
+  env and the README/setup.sh invocations. doctor is now **13 ok, 0 fail**.
 
 ## Files
 - `stanok/launcher/stanok.py`, `stanok/sandbox-run.sh`, `stanok/README.md`
