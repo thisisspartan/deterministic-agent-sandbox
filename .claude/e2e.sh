@@ -2,14 +2,14 @@
 # E2E pipeline test: launch the machine on a ticket, block until the run
 # finishes, then verify evidence/<label>/summary.json (rc=0 + verifier=PASS).
 #
-# Usage: ./e2e.sh <ticket.md> <label>
+# Usage: ./.claude/e2e.sh <ticket.md> <label>
 # Exit: 0 = E2E-OK, 1 = E2E-FAIL (dirty tree / no summary / rc!=0 / verifier!=PASS)
 set -u
 set -o pipefail
 
-TICKET="${1:?usage: ./e2e.sh <ticket.md> <label>}"
-LABEL="${2:?usage: ./e2e.sh <ticket.md> <label>}"
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+TICKET="${1:?usage: ./.claude/e2e.sh <ticket.md> <label>}"
+LABEL="${2:?usage: ./.claude/e2e.sh <ticket.md> <label>}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 # Gate 1: clean submodule tree (mirrors launch.sh dirty-tree gate, rc=22).

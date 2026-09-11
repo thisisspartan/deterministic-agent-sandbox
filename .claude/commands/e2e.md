@@ -15,7 +15,7 @@ Arguments: `$ARGUMENTS` = `<ticket.md> <label>`. If either is missing, ask the u
 
 ## 2. Run (ONE command — no polling, no log reads while the machine runs)
 From ROOT, run with the Bash tool (`run_in_background: true`):
-    ./e2e.sh <ticket.md> <label>
+    ./.claude/e2e.sh <ticket.md> <label>
 It launches the machine (`--background`), blocks in a `while ... status ... running` loop,
 and prints the final verdict. Wait for the completion notification.
 Do NOT poll `launch.sh status`, do NOT read `.launch.log` / evidence files while it runs.

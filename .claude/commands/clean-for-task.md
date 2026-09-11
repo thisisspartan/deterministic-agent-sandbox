@@ -42,5 +42,5 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 ## Never delete (infrastructure — always keep)
 `launcher/`, `hooks/`, `scripts/`, `launch.sh`, `sandbox-run.sh`, `setup.sh`,
 `requirements.txt`, `CONTEXT.md`, `CLAUDE.supervisor.md`, `P0-launch.sh`, `.gitmodules`,
-`.gitignore`, `e2e.sh`, `.claude/`, `tickets/.gitkeep`, `specs/.gitkeep`,
+`.gitignore`, `.claude/`, `tickets/.gitkeep`, `specs/.gitkeep`,
 and every `.gitkeep` file.
