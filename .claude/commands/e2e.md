@@ -11,7 +11,7 @@ Arguments: `$ARGUMENTS` = `<ticket.md> <label>`. If either is missing, ask the u
 - ROOT = `git rev-parse --show-toplevel` (do NOT hardcode a path).
 - `git -C "$ROOT/stanok" status --porcelain` — if dirty, commit first
   (`git -C "$ROOT/stanok" add -A && git -C "$ROOT/stanok" commit --no-verify -m "chore: save state before e2e"`);
-  e2e.sh fails closed on a dirty tree (gate 1).
+  enforcement lives in one place — launch.sh's dirty-tree gate (rc=22).
 
 ## 2. Run (ONE command — no polling, no log reads while the machine runs)
 From ROOT, run with the Bash tool (`run_in_background: true`):

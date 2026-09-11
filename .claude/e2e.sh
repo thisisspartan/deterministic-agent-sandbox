@@ -3,7 +3,8 @@
 # finishes, then verify evidence/<label>/summary.json (rc=0 + verifier=PASS).
 #
 # Usage: ./.claude/e2e.sh <ticket.md> <label>
-# Exit: 0 = E2E-OK, 1 = E2E-FAIL (dirty tree / no summary / rc!=0 / verifier!=PASS)
+# Exit: 0 = E2E-OK, 1 = E2E-FAIL (no summary / rc!=0 / verifier!=PASS)
+# The dirty-tree gate is launch.sh's (rc=22) — single source, no copy here.
 set -u
 set -o pipefail
 
@@ -12,18 +13,12 @@ LABEL="${2:?usage: ./.claude/e2e.sh <ticket.md> <label>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Gate 1: clean submodule tree (mirrors launch.sh dirty-tree gate, rc=22).
-if [[ -n "$(git -C stanok status --porcelain)" ]]; then
-    echo "E2E-FAIL: dirty submodule tree — commit before launch" >&2
-    exit 1
-fi
-
-# Gate 2: launch + blocking wait (single combined command, no polling).
+# Gate 1: launch + blocking wait (single combined command, no polling).
 ./stanok/launch.sh run "$TICKET" "$LABEL" --background \
     && while ./stanok/launch.sh status "$LABEL" | grep -q '"state": "running"'; do sleep 15; done \
     && ./stanok/launch.sh status "$LABEL"
 
-# Gate 3: verdict from summary.json.
+# Gate 2: verdict from summary.json.
 SUMMARY="stanok/evidence/$LABEL/summary.json"
 if [[ ! -f "$SUMMARY" ]]; then
     echo "E2E-FAIL: no summary.json at $SUMMARY" >&2
