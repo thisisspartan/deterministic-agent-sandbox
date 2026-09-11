@@ -76,6 +76,12 @@ Rebase the three denyWrite entries against `.claude` so they land on the intende
 - Verification smoke: the session stream (host `session-<run_id>.jsonl`) shows **no**
   `bwrap: Can't create file`; at least one `bash scripts/run.sh …` call returns rc=0.
 
+Verified 2026-09-11 (`smoke-cc075`, `TASK-STANOK-SMOKE-01.md`): doctor **13 ok / 0 fail**;
+smoke rc=0, verifier=PASS, CLEAN-FIRST, 1 turn 85s, live window 16104; session stream
+`/tmp/stanok-logs/smoke-cc075/session-ceaed0cb.jsonl` = **0** `Can't create file` hits and
+`bash scripts/run.sh list`, `… test tests/smoke.test.js`, `… smoke src/smoke.js` all
+returned non-error (rc=0).
+
 ## Explicit non-change
 
 - `sandbox-run.sh` is **untouched** (IRON STOP; the mount-preflight was dropped in CC-070).
