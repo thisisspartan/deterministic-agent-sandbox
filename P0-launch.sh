@@ -44,6 +44,10 @@ PROXY="${STANOK_PROXY:-http://$HOST:8118}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
 SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-$HOME/git/agnt/.env}"
 
+# Gemini key for /compact offloading (bundle reads GEMINI_API_KEY; without it
+# gemCompact falls back to the local model). Override via env to rotate.
+export GEMINI_API_KEY="${GEMINI_API_KEY:-AIzaSyDpT8TpnBWC6erqpNaCLG5y0AkhemhHARM}"
+
 # Propagate the endpoint to the machine: stanok/launcher/stanok.py reads
 # STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
 export STANOK_SERVER_URL="$SERVER_URL"
