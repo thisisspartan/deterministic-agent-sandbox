@@ -44,11 +44,18 @@ PROXY="${STANOK_PROXY:-http://$HOST:8118}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
 SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-$HOME/git/agnt/.env}"
 
+# Mistral keys for /compact offloading. extCompact tries them in order
+# (MISTRAL_API_KEY -> _2 -> _3, each a separate workspace/quota pool) and
+# falls back to the local model only if all fail.
+export COMPACT_BACKEND=local
+export MISTRAL_API_KEY="${MISTRAL_API_KEY:-REDACTED}"
+export MISTRAL_MODEL="${MISTRAL_MODEL:-codestral-latest}"
+
 # Propagate the endpoint to the machine: stanok/launcher/stanok.py reads
 # STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
 export STANOK_SERVER_URL="$SERVER_URL"
 export STANOK_PROXY="$PROXY"
-
+COMPACT_BACKEND=mistral
 # ---------------------------------------------------------------------------
 # Local Anthropic-compatible endpoint
 # ---------------------------------------------------------------------------
@@ -72,10 +79,11 @@ export http_proxy="$PROXY"
 export https_proxy="$PROXY"
 export all_proxy=""
 if [[ "$HOST" == "127.0.0.1" ]]; then
-    export no_proxy="127.0.0.1,localhost"
+    export no_proxy="127.0.0.1,localhost,192.168.122.156,192.168.122.0/24"
 else
-    export no_proxy="$HOST,localhost,127.0.0.1"
+    export no_proxy="$HOST,localhost,127.0.0.1,192.168.122.156,192.168.122.0/24"
 fi
+export NO_PROXY="$no_proxy"
 
 # ---------------------------------------------------------------------------
 # Local / offline-friendly Claude Code behavior
