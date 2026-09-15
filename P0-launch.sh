@@ -44,19 +44,18 @@ PROXY="${STANOK_PROXY:-http://$HOST:8118}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
 SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-$HOME/git/agnt/.env}"
 
-# Gemini keys for /compact offloading. gemCompact tries them in order
-# (GEMINI_API_KEY -> _2 -> _3, each a separate quota pool) and falls back to
-# the local model only if all fail. Fill in the defaults below, or override
-# any of them via env to rotate.
-export GEMINI_API_KEY="${GEMINI_API_KEY:-AIzaSyDpT8TpnBWC6erqpNaCLG5y0AkhemhHARM}"
-export GEMINI_API_KEY_2="${GEMINI_API_KEY_2:-AQ.Ab8RN6IlSCGt2jkavALC21B6tyT1KowR01v3oKpQEOsZ1JEFrw}"
-export GEMINI_API_KEY_3="${GEMINI_API_KEY_3:-}"
+# Mistral keys for /compact offloading. extCompact tries them in order
+# (MISTRAL_API_KEY -> _2 -> _3, each a separate workspace/quota pool) and
+# falls back to the local model only if all fail.
+export COMPACT_BACKEND=local
+export MISTRAL_API_KEY="${MISTRAL_API_KEY:-bRNUK6IVCxuNb8pGCsQ6LfDuVS0blT5m}"
+export MISTRAL_MODEL="${MISTRAL_MODEL:-codestral-latest}"
 
 # Propagate the endpoint to the machine: stanok/launcher/stanok.py reads
 # STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
 export STANOK_SERVER_URL="$SERVER_URL"
 export STANOK_PROXY="$PROXY"
-
+COMPACT_BACKEND=mistral
 # ---------------------------------------------------------------------------
 # Local Anthropic-compatible endpoint
 # ---------------------------------------------------------------------------
@@ -80,10 +79,11 @@ export http_proxy="$PROXY"
 export https_proxy="$PROXY"
 export all_proxy=""
 if [[ "$HOST" == "127.0.0.1" ]]; then
-    export no_proxy="127.0.0.1,localhost"
+    export no_proxy="127.0.0.1,localhost,192.168.122.156,192.168.122.0/24"
 else
-    export no_proxy="$HOST,localhost,127.0.0.1"
+    export no_proxy="$HOST,localhost,127.0.0.1,192.168.122.156,192.168.122.0/24"
 fi
+export NO_PROXY="$no_proxy"
 
 # ---------------------------------------------------------------------------
 # Local / offline-friendly Claude Code behavior
@@ -98,10 +98,10 @@ export CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS="1"
 export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
-# Context / compaction (n_ctx=123136, output reserve 24k)
-# Canon: 123000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
+# Context / compaction (n_ctx=128000, output reserve 24k)
+# Canon: 128000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
 # ---------------------------------------------------------------------------
-export CLAUDE_CODE_AUTO_COMPACT_WINDOW="123000"
+export CLAUDE_CODE_AUTO_COMPACT_WINDOW="128000"
 export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="95"
 export CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS="16000"
 export MAX_MCP_OUTPUT_TOKENS="12000"
