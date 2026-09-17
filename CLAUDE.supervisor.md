@@ -55,6 +55,10 @@ or to `tail`/`cat` logs while the machine is running.
 - **A. SUCCESS** (`rc: 0` AND `verifier: "PASS"`):
   Mark the ticket `[x] DONE` in `specs/STATUS.md`.
   Move IMMEDIATELY to the next ticket. Do not stop for an intermediate report.
+- **C. NO-OP** (`probe_result: "NO-OP-PASS"`):
+  Deliverable already satisfies its tests without a new build — do NOT retry.
+  Mark the ticket `[x] DONE (no-op)` in `specs/STATUS.md` with one line noting which
+  files pre-existed. Move to the next ticket.
 - **B. DEFECT** (`rc != 0` OR `verifier: "FAIL"`):
   The launcher already performed local retries inside the session with an adaptive `<contract_lock>`.
   The defect cause — from the `failures` or `errors` field in `summary.json`.
