@@ -65,11 +65,7 @@ flowchart TD
 ## Quick start
 
 1. **Machine:** `cd stanok && ./setup.sh` → `.venv` + `claude-agent-sdk`.
-   Check: `DOCTOR_EXPECT_NO_CLOUD=1 bash hooks/doctor.sh` → 9 ok, 4 fail
-   (the 4 fails are stale doctor checks, not regressions: expects the deleted
-   PreToolUse hooks; placeholder tickets lack the W2.1 `module:` header so
-   rc=13 masks rc=20; role-leak temp repo is not a git repo so rc=22 fires
-   before rc=24 — doctor.sh needs a wave-4 refresh).
+   Check: `DOCTOR_EXPECT_NO_CLOUD=1 bash hooks/doctor.sh` → 13 ok, 0 fail.
 2. **Server:** start a local llama-server (Anthropic-compatible), address —
    `STANOK_SERVER_URL` (default `http://127.0.0.1:8080`).
 3. **Control room:** `./P0-launch.sh` — opens an interactive supervisor session
