@@ -52,13 +52,13 @@ or to `tail`/`cat` logs while the machine is running.
 4. Timeout: if the blocking wait command runs for a total of > 40 min → stop the process: `./stanok/launch.sh stop <label>`.
 
 ### Verdict from summary.json
+- **C. NO-OP** (`probe_result: "NO-OP-PASS"`):
+  Deliverable already satisfies its tests without a new build. Do NOT retry.
+  Mark `[~] SKIPPED (pre-satisfied)` in specs/STATUS.md — not DONE (rc != 0, see Forbidden).
+  Move to the next ticket.
 - **A. SUCCESS** (`rc: 0` AND `verifier: "PASS"`):
   Mark the ticket `[x] DONE` in `specs/STATUS.md`.
   Move IMMEDIATELY to the next ticket. Do not stop for an intermediate report.
-- **C. NO-OP** (`probe_result: "NO-OP-PASS"`):
-  Deliverable already satisfies its tests without a new build — do NOT retry.
-  Mark the ticket `[x] DONE (no-op)` in `specs/STATUS.md` with one line noting which
-  files pre-existed. Move to the next ticket.
 - **B. DEFECT** (`rc != 0` OR `verifier: "FAIL"`):
   The launcher already performed local retries inside the session with an adaptive `<contract_lock>`.
   The defect cause — from the `failures` or `errors` field in `summary.json`.
