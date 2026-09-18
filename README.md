@@ -19,36 +19,8 @@ Two separate git repos: the **root** is the control room (L1 supervisor),
 it only produces tickets and launches the machine, which returns a typed
 `summary.json` for validation.
 
-```mermaid
-flowchart TD
-    subgraph ROOT["Control room — repo root (L1 supervisor)"]
-        direction TB
-        G["Grill (interview)"]
-        C["CONTEXT.md — persistent facts"]
-        S["specs/SPEC-*.md — requirements + acceptance"]
-        T["tickets/TASK-STANOK-CC-NNN.md — self-contained ticket"]
-        L["./stanok/launch.sh tickets/… label --background"]
-        G --> C --> S --> T --> L
-    end
-
-    subgraph STANOK["Machine — stanok/ (git submodule)"]
-        direction TB
-        SH["launch.sh (shim)"]
-        R["Runner: launcher/stanok.py"]
-        GATE["Fail-closed gates: role-leak rc=24 · lock rc=21 · dirty-tree rc=22 · server rc=20"]
-        SES["Claude session (cwd=stanok): coder → tester → reviewer"]
-        HOOKS["Hooks on every Write/Edit: malware-scan · verifier · path-guard · test-lock"]
-        TEST["node tests/*.test.js"]
-        EV["evidence/label/summary.json — rc + verifier PASS/FAIL"]
-        SH --> R --> GATE --> SES --> HOOKS --> TEST --> EV
-    end
-
-    L -->|ticket passed as text in the prompt| SH
-    EV -->|summary.json| V["Supervisor validation"]
-    V -->|PASS| NEXT["next ticket"]
-    V -->|FAIL| RETRY["retry: label-retry1"]
-    RETRY --> L
-```
+Full architecture diagram and machine internals — `stanok/README.md`
+(single source of truth; this README deliberately does not copy it).
 
 ## Structure
 
@@ -65,7 +37,7 @@ flowchart TD
 ## Quick start
 
 1. **Machine:** `cd stanok && ./setup.sh` → `.venv` + `claude-agent-sdk`.
-   Check: `DOCTOR_EXPECT_NO_CLOUD=1 bash hooks/doctor.sh` → 14 ok, 0 fail.
+   Check: `DOCTOR_EXPECT_NO_CLOUD=1 bash hooks/doctor.sh` (expected output — `stanok/README.md`).
 2. **Server:** start a local llama-server (Anthropic-compatible), address —
    `STANOK_SERVER_URL` (default `http://127.0.0.1:8080`).
 3. **Control room:** `./P0-launch.sh` — opens an interactive supervisor session
