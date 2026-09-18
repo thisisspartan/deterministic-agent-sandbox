@@ -1,6 +1,18 @@
 # PLAN — Docker refactor of the stanok machine (bwrap → container boundary)
 
-Status: **IN PROGRESS — B1 hybrid adopted 2026-09-18; steps 1–4 done (revised for B1), awaiting user's stanok.py patch (step 5).**
+Status: **IN PROGRESS — B1 hybrid adopted 2026-09-18. Steps 1–4, 6–9 done (2026-09-18): infra committed (stanok `9422048`), image built, static checks green, NO-OP smoke PASS (`smoke02-docker3`: probe_result=NO-OP-PASS, verifier=PASS, 1 turn, 0 writes, no orphan containers). Awaiting user's `stanok.py` patch (step 5); step 10 (rebuild smoke) is the user's call.**
+
+Extra fixes found during steps 7–9 (not in the original gap list):
+- `--cpus` default 4 → 2 (host has 2 CPUs; docker rejects higher).
+- claude install is a multi-hop symlink chain (`bin/claude` → npm package `cli.js` →
+  `git/claude-code-2.1.88/cli.js`); sandbox-run.sh now mounts EVERY directory in the
+  chain, not just shim dir + final dir (intermediate hop dangled → `command -v claude` failed).
+- Host `$PY` is `$REPO_ROOT/.venv/bin/python` (symlink → `/usr/bin/python3`); inside the
+  container that lands on the image python 3.11 with the host venv's 3.12 site-packages
+  (read-only) → `No module named claude_agent_sdk`. sandbox-run.sh remaps the venv path
+  to the image system python (SDK is baked into the image).
+- CLI needs `socat` (allowedDomains bridge sockets) in addition to `bwrap` — startup
+  hard-fail verified: "dependencies are missing: socat not installed". Added to Dockerfile.
 
 Decisions (§2, confirmed):
 1. HOME: **(a) tmpfs** — ephemeral, no host coupling.
