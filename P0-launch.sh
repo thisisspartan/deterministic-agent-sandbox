@@ -44,20 +44,10 @@ PROXY="${STANOK_PROXY:-http://$HOST:8118}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
 SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-$HOME/git/agnt/.env}"
 
-# Mistral keys for /compact offloading. extCompact tries them in order
-# (MISTRAL_API_KEY -> _2 -> _3, each a separate workspace/quota pool) and
-# falls back to the local model only if all fail.
-# The key is NOT stored in this repo: set MISTRAL_API_KEY in your shell
-# profile or $SEARCH_ENV_FILE (same pattern as SERPER/TAVILY/EXA keys).
-export MISTRAL_API_KEY="${MISTRAL_API_KEY:?set MISTRAL_API_KEY in your shell profile or .env}"
-export MISTRAL_MODEL="${MISTRAL_MODEL:-codestral-latest}"
-
 # Propagate the endpoint to the machine: stanok/launcher/stanok.py reads
 # STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
 export STANOK_SERVER_URL="$SERVER_URL"
 export STANOK_PROXY="$PROXY"
-# /compact offloads to Mistral (falls back to the local model if all keys fail).
-export COMPACT_BACKEND=mistral
 # ---------------------------------------------------------------------------
 # Local Anthropic-compatible endpoint
 # ---------------------------------------------------------------------------
