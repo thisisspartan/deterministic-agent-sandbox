@@ -6,7 +6,8 @@ Two-level template for starting a new project "from interview to code":
   spec → tickets → machine launch → validation. Role — `CLAUDE.supervisor.md`
   (injected by `P0-launch.sh` so it does NOT leak into the machine as a role).
 - **`stanok/`** — git submodule: a Claude Code machine on a local model.
-  Autonomous TDD cycle under deterministic hooks, tests run with a real `node`,
+  Autonomous TDD cycle under deterministic hooks inside a Docker container,
+  tests run through the project's own `scripts/run.sh`,
   result — `stanok/evidence/<label>/summary.json`.
 
 Tickets and specs live here, in the root; the machine does not see them — each ticket
@@ -36,8 +37,9 @@ Full architecture diagram and machine internals — `stanok/README.md`
 
 ## Quick start
 
-1. **Machine:** `cd stanok && ./setup.sh` → `.venv` + `claude-agent-sdk`.
-   Check: `DOCTOR_EXPECT_NO_CLOUD=1 bash hooks/doctor.sh` (expected output — `stanok/README.md`).
+1. **Machine:** `cd stanok && ./setup.sh` → `.venv` + `claude-agent-sdk`
+   + Docker machine image. Check: `bash hooks/doctor.sh` (expected —
+   `15 ok, 0 fail`; see `stanok/README.md`).
 2. **Server:** start a local llama-server (Anthropic-compatible), address —
    `STANOK_SERVER_URL` (default `http://127.0.0.1:8080`).
 3. **Control room:** `./P0-launch.sh` — opens an interactive supervisor session
