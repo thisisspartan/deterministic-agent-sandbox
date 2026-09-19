@@ -1,6 +1,8 @@
 # TASK-STANOK-SMOKE-01 — Sandbox/env smoke: add()
 
-module: smoke
+impl: src/smoke.js
+test: tests/smoke.test.js
+docs: docs/smoke.md
 
 This is a harness smoke, not a product feature. Its purpose is to force a complete
 machine run (model turn -> Bash tool -> both sandbox layers -> external verifier)
