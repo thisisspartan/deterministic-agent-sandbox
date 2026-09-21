@@ -8,7 +8,8 @@
 #   STANOK_MODEL       — model name (default Qwen3.8-27B-MTP)
 #   STANOK_PROXY       — proxy for web tooling (default http://<host>:8118)
 #   CLAUDE_BIN         — claude binary (default $HOME/.npm-global/bin/claude)
-#   SEARCH_ENV_FILE    — .env with web-MCP keys (default $HOME/git/agnt/.env)
+#   SEARCH_ENV_FILE    — optional .env with web-MCP keys (default: none)
+#   NO_PROXY_EXTRA     — extra no_proxy entries (default: none)
 #
 # Run: ./P0-launch.sh [--host <ip>] [claude arguments]
 set -u
@@ -42,7 +43,7 @@ SERVER_URL="${STANOK_SERVER_URL:-http://$HOST:8080}"
 MODEL="${STANOK_MODEL:-Qwen3.8-27B-MTP}"
 PROXY="${STANOK_PROXY:-http://$HOST:8118}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
-SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-$HOME/git/agnt/.env}"
+SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-}"
 
 # Propagate the endpoint to the machine: stanok/launcher/stanok.py reads
 # STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
@@ -71,10 +72,14 @@ export http_proxy="$PROXY"
 export https_proxy="$PROXY"
 export all_proxy=""
 if [[ "$HOST" == "127.0.0.1" ]]; then
-    export no_proxy="127.0.0.1,localhost,192.168.122.156,192.168.122.0/24"
+    no_proxy="127.0.0.1,localhost"
 else
-    export no_proxy="$HOST,localhost,127.0.0.1,192.168.122.156,192.168.122.0/24"
+    no_proxy="$HOST,localhost,127.0.0.1"
 fi
+# Machine-specific extra entries (e.g. a docker-host LAN IP) go here via env,
+# not in the script: the public skeleton carries no local addresses.
+[[ -n "${NO_PROXY_EXTRA:-}" ]] && no_proxy="$no_proxy,$NO_PROXY_EXTRA"
+export no_proxy
 export NO_PROXY="$no_proxy"
 
 # ---------------------------------------------------------------------------
