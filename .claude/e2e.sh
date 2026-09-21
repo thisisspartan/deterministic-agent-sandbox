@@ -14,9 +14,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 # Gate 1: launch + blocking wait (single combined command, no polling).
-./stanok/launch.sh run "$TICKET" "$LABEL" --background \
+# The chain result is checked explicitly (no set -e): a launch failure must
+# not fall through to Gate 2 with a misleading "no summary.json".
+if ! { ./stanok/launch.sh run "$TICKET" "$LABEL" --background \
     && while ./stanok/launch.sh status "$LABEL" | grep -q '"state": "running"'; do sleep 15; done \
-    && ./stanok/launch.sh status "$LABEL"
+    && ./stanok/launch.sh status "$LABEL"; }; then
+    echo "E2E-FAIL: gate 1 (launch + wait) failed" >&2
+    exit 1
+fi
 
 # Gate 2: verdict from summary.json.
 SUMMARY="stanok/evidence/$LABEL/summary.json"

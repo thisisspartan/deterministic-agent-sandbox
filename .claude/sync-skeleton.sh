@@ -49,24 +49,20 @@ done
 mapfile -t dst_files < <(git -C "$DST_STANOK" ls-files)
 declare -A dst_tracked=()
 for f in "${dst_files[@]}"; do dst_tracked["$f"]=1; done
+declare -A src_tracked=()
+for f in "${sync_set[@]}"; do src_tracked["$f"]=1; done
 
 # --- classify submodule changes ---
 sub_add=(); sub_mod=(); sub_rem=()
 for f in "${sync_set[@]}"; do
   if [[ -z "${dst_tracked[$f]:-}" ]]; then
     sub_add+=("$f")
-  elif [[ "$f" == ".claude/settings.stanok.json" ]]; then
-    # compare with the sandbox paths already adapted to DST, so the diff shows the
-    # true net change (the apply step rewrites these paths via sed)
-    if ! diff -q <(sed "s|$SRC/stanok|$DST_STANOK|g" "$SRC/stanok/$f") "$DST_STANOK/$f" >/dev/null 2>&1; then
-      sub_mod+=("$f")
-    fi
   elif ! diff -q "$SRC/stanok/$f" "$DST_STANOK/$f" >/dev/null 2>&1; then
     sub_mod+=("$f")
   fi
 done
 for f in "${dst_files[@]}"; do
-  if ! printf '%s\n' "${sync_set[@]}" | grep -qxF "$f"; then
+  if [[ -z "${src_tracked[$f]:-}" ]]; then
     sub_rem+=("$f")
   fi
 done
@@ -119,16 +115,13 @@ for f in "${sync_set[@]}"; do
   cp "$SRC/stanok/$f" "$f"
 done
 for f in "${dst_files[@]}"; do
-  if ! printf '%s\n' "${sync_set[@]}" | grep -qxF "$f"; then
+  if [[ -z "${src_tracked[$f]:-}" ]]; then
     git rm -q -- "$f"
   fi
 done
 for d in src tests docs; do
   mkdir -p "$d"; [[ -f "$d/.gitkeep" ]] || touch "$d/.gitkeep"
 done
-if [[ -f .claude/settings.stanok.json ]]; then
-  sed -i "s|$SRC/stanok|$DST_STANOK|g" .claude/settings.stanok.json
-fi
 
 # --- [2/4] top-level: mirror infra scripts, keep clean templates ---
 echo "[2/4] top-level infra sync"
