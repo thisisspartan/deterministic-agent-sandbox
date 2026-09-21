@@ -56,9 +56,12 @@ or to `tail`/`cat` logs while the machine is running.
   Deliverable already satisfies its tests without a new build. Do NOT retry.
   Mark `[~] SKIPPED (pre-satisfied)` in specs/STATUS.md — not DONE (rc != 0, see Forbidden).
   Move to the next ticket.
-- **A. SUCCESS** (`rc: 0` AND `verifier: "PASS"`):
+- **A. SUCCESS** (`rc: 0` AND `verifier: "PASS"` AND `contract_lock_violations == []`):
   Mark the ticket `[x] DONE` in `specs/STATUS.md`.
   Move IMMEDIATELY to the next ticket. Do not stop for an intermediate report.
+  A non-empty `contract_lock_violations` is a DEFECT (B) even when rc=0 and
+  verifier=PASS: the machine touched `tests/` or `scripts/run.sh` after the
+  manifest snapshot — the PASS was computed against tampered tests.
 - **B. DEFECT** (`rc != 0` OR `verifier: "FAIL"`):
   The launcher already performed local retries inside the session with an adaptive `<contract_lock>`.
   The defect cause — from the `failures` or `errors` field in `summary.json`.

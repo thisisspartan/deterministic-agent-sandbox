@@ -10,8 +10,9 @@ Two-level template for starting a new project "from interview to code":
   tests run through the project's own `scripts/run.sh`,
   result — `stanok/evidence/<label>/summary.json`.
 
-Tickets and specs live here, in the root; the machine does not see them — each ticket
-is self-contained and passed to it as text in the prompt.
+Tickets and specs live here, in the root. The machine sees the root read-only
+(sandbox mount), but each ticket is self-contained and passed to it as text
+in the prompt — it never needs the rest.
 
 ## How it works
 
@@ -39,7 +40,7 @@ Full architecture diagram and machine internals — `stanok/README.md`
 
 1. **Machine:** `cd stanok && ./setup.sh` → `.venv` + `claude-agent-sdk`
    + Docker machine image. Check: `bash hooks/doctor.sh` (expected —
-   `15 ok, 0 fail`; see `stanok/README.md`).
+   all green; see `stanok/README.md`).
 2. **Server:** start a local llama-server (Anthropic-compatible), address —
    `STANOK_SERVER_URL` (default `http://127.0.0.1:8080`).
 3. **Control room:** `./P0-launch.sh` — opens an interactive supervisor session
@@ -55,26 +56,26 @@ lies in the project root, the machine (cwd=`stanok/`) will pick it up as its rol
 the control-room role lives in `CLAUDE.supervisor.md` and is injected explicitly via
 `--append-system-prompt-file`. **Do not create a `CLAUDE.md` in the root.**
 
-## Publishing to GitLab
+## Publishing to a git host (GitHub in this skeleton)
 
 This repo and `stanok/` are TWO separate git repos.
 
-1. Create an empty repo on GitLab for the machine (e.g. `stanok-skeleton`) and push:
+1. Create an empty repo on your git host for the machine (e.g. `stanok-skeleton`) and push:
    ```
-   cd stanok && git remote add origin <gitlab-url-stanok> && git push -u origin main
+   cd stanok && git remote add origin <host-url-stanok> && git push -u origin main
    ```
 2. In the root repo update the submodule URL:
    ```
-   git config -f .gitmodules submodule.stanok.url <gitlab-url-stanok>
+   git config -f .gitmodules submodule.stanok.url <host-url-stanok>
    git submodule sync
    ```
 3. Push the root repo (the parent). After cloning in a new place:
    ```
-   git clone --recurse-submodules <gitlab-url-parent>
+   git clone --recurse-submodules <host-url-parent>
    cd stanok && ./setup.sh
    ```
 
 ## Configuration (env, see the machine README)
 
-`STANOK_SERVER_URL`, `STANOK_MODEL`, `STANOK_PROXY`, `STANOK_CLAUDE_BIN`,
-`STANOK_PY` — all overridable from the environment.
+`STANOK_SERVER_URL`, `STANOK_MODEL`, `STANOK_PROXY`, `CLAUDE_BIN`,
+`SEARCH_ENV_FILE`, `STANOK_PY` — all overridable from the environment.

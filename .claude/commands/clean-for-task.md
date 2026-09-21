@@ -40,7 +40,7 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 - Show the final `git status --porcelain`. Ask before committing if the user prefers not to.
 
 ## Never delete (infrastructure — always keep)
-`launcher/`, `hooks/`, `scripts/`, `launch.sh`, `sandbox-run.sh`, `setup.sh`,
+`launcher/`, `hooks/`, `scripts/`, `launch.sh`, `setup.sh`,
 `requirements.txt`, `CONTEXT.md`, `CLAUDE.supervisor.md`, `P0-launch.sh`, `.gitmodules`,
 `.gitignore`, `.claude/`, `tickets/.gitkeep`, `specs/.gitkeep`,
 and every `.gitkeep` file.
