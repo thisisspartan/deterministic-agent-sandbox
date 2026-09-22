@@ -142,7 +142,7 @@ echo "[3/4] commit"
 cd "$DST_STANOK"
 git add -A
 if [[ -n "$(git status --porcelain)" ]]; then
-  git commit -q --no-verify -m "sync infra from $(basename "$SRC") ($(date +%F))"
+  git commit -q -m "chore: sync infra from $(basename "$SRC") ($(date +%F))"
   echo "  submodule committed"
 else
   echo "  submodule: no changes"
@@ -150,7 +150,7 @@ fi
 cd "$DST"
 git add -A
 if [[ -n "$(git status --porcelain)" ]]; then
-  git commit -q --no-verify -m "sync infra from $(basename "$SRC") ($(date +%F))"
+  git commit -q -m "chore: sync infra from $(basename "$SRC") ($(date +%F))"
   echo "  top-level committed"
 else
   echo "  top-level: no changes"
