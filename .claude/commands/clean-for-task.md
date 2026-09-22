@@ -35,7 +35,7 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 - Always keep `.gitkeep` in `src/`, `tests/`, `docs/` so the directories survive.
 
 ## 5. Commit (submodule first, then parent)
-- If a submodule was cleaned: `git -C <sub> add -A && git -C <sub> commit --no-verify -m "chore: clean for new task — infra only"`.
+- If a submodule was cleaned: `git -C <sub> add -A && git -C <sub> commit -m "chore: clean for new task — infra only"` (the commit-msg hook allows this exact maintenance prefix — no `--no-verify`).
 - In the parent: `git add -A` (picks up the gitlink + root changes) and commit with the same message.
 - Show the final `git status --porcelain`. Ask before committing if the user prefers not to.
 
