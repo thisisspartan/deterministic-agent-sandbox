@@ -96,3 +96,10 @@ ONLY:
 - Spawning subagents to launch the machine or check git.
 - Marking a ticket DONE without `rc: 0` and `verifier: "PASS"` confirmed in `summary.json`.
 - Creating a `CLAUDE.md` in the project root.
+- Treating a non-zero exit code (especially rc=1) as success or as a TDD red phase
+  WITHOUT reading the error text: any `bwrap` / `Read-only file system` / EROFS error
+  in a Bash tool result is a FAIL (sandbox defect), never a red phase. The red phase is
+  confirmed ONLY by the verifier hook's `RED CONFIRMED (rc=1)` with real test-failure
+  output — and even then the Bash tool result text must be checked for sandbox errors.
+- Polling Opik via curl in a loop (repeated status queries). One-off fetches AFTER the
+  run has completed are allowed; never poll Opik while the machine is running.

@@ -21,11 +21,16 @@ set -o pipefail
 # STANOK_PROXY) still win. All other arguments pass through to claude.
 # ---------------------------------------------------------------------------
 HOST="127.0.0.1"
+TOK=128000
 ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --host)
             HOST="${2:?--host requires an IP address}"
+            shift 2
+            ;;
+        --tok)
+            TOK="$2"
             shift 2
             ;;
         *)
@@ -98,7 +103,8 @@ export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 # Context / compaction (n_ctx=128000, output reserve 24k)
 # Canon: 128000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
 # ---------------------------------------------------------------------------
-export CLAUDE_CODE_AUTO_COMPACT_WINDOW="128000"
+export CLAUDE_CODE_AUTO_COMPACT_WINDOW="$TOK"
+export STANOK_REQUIRED_WINDOW="$TOK"
 export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="95"
 export CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS="16000"
 export MAX_MCP_OUTPUT_TOKENS="12000"
