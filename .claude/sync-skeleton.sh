@@ -68,7 +68,7 @@ for f in "${dst_files[@]}"; do
 done
 
 # --- classify top-level changes ---
-top_sync=(P0-launch.sh .gitmodules .gitignore CLAUDE.supervisor.md .claude/e2e.sh)
+top_sync=(P0-launch.sh .gitmodules .gitignore CLAUDE.supervisor.md .claude/e2e.sh .claude/sync-skeleton.sh)
 top_add=(); top_mod=()
 for f in "${top_sync[@]}"; do
   [[ -f "$SRC/$f" ]] || continue
