@@ -20,8 +20,10 @@ infra) and a `TOTAL changes:` count. **Show the user this list.**
 - If `TOTAL changes: 0` → tell the user "already in sync, nothing to do" and stop.
 
 ## 3. Ask how to proceed (AskUserQuestion)
-- (a) **Full sync** — apply + commit both repos + push both to their GitHub remotes.
-- (b) **Local only** — apply + commit both repos, NO push.
+"Both repos" = the two DST repos: skeleton-pub (top) and its submodule.
+SRC (this repo) is READ-ONLY for the sync — never committed, never pushed.
+- (a) **Full sync** — apply + commit skeleton-pub (top + submodule) + push both to GitHub.
+- (b) **Local only** — apply + commit skeleton-pub (top + submodule), NO push.
 Do not apply until the user chooses.
 
 ## 4. Apply
