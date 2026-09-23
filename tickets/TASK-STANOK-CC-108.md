@@ -1,5 +1,9 @@
 # TASK-STANOK-CC-108 — Console fire: architecture (working skeleton + basic contract)
 
+impl: src/fire.py
+test: tests/fire_basic_test.py
+docs: docs/fire.md
+
 ## Goal
 
 Build a WORKING, deterministic, multicolor-capable terminal fire as a single

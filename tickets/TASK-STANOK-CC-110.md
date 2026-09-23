@@ -1,5 +1,9 @@
 # TASK-STANOK-CC-110 — Console fire: development (robustness, performance, headless testability)
 
+impl: src/fire.py (existing — extend in place, do NOT rewrite from scratch)
+test: tests/fire_polish_test.py (NEW)
+docs: docs/fire.md (existing — update)
+
 ## Context
 
 `src/fire.py` already exists (from CC-108 + CC-109): a maximally realistic
