@@ -1,4 +1,4 @@
-# TASK-STANOK-CC-111 — Console fire: shape defect (flame must taper, not be a block) — RETRY 1
+# TASK-STANOK-CC-111 — Console fire: shape defect (flame must taper, not be a block) — RETRY 2
 
 test: tests/fire_shape_test.py
 docs: docs/fire.md
@@ -25,6 +25,15 @@ renders as a solid block. Three root causes:
 3. **Base injection is full-width** — the bottom row is a solid line.
 
 Fix all three with targeted changes to the simulation and palette.
+
+## Current state (from the interrupted previous attempt — read first)
+
+The current `src/fire.py` is a PARTIAL fix: the flame already tapers
+(top frame rows are blank, base is wide) and `tests/fire_basic_test.py` +
+`tests/fire_polish_test.py` pass — but `tests/fire_realism_test.py`
+currently FAILS (a regression from the in-progress edits). Diagnose which
+realism assertions fail and fix that regression with targeted changes; do
+NOT redo the shape work that already holds.
 
 ## Existing contracts (must keep passing — DO NOT modify these files)
 
