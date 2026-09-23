@@ -30,7 +30,7 @@ Verify facts with commands, not from memory.
 `launch.sh` performs cleanup in `stanok/`; the machine fails closed on a dirty tree (rc=22).
 Procedure before every launch:
 1. `git -C stanok status --porcelain`
-2. Not empty → `git -C stanok add -A && git -C stanok commit -m "chore: save state before ticket"` (the commit-msg hook allows this exact maintenance prefix — no `--no-verify`).
+2. Not empty → `git -C stanok add -A && git -C stanok commit -m "chore: save state before ticket"` (the `chore:` prefix is a maintenance convention only — no git hook enforces it; the operator commits).
 3. Launch ONLY when `stanok/` status is clean. Do not spawn subagents for git checks.
 
 ## 3. Pipeline: launch → validate → next ticket
