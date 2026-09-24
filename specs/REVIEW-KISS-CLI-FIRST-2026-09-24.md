@@ -121,3 +121,47 @@ T3/T4 (динамические RW-mounts от `mutable_paths`) и T5 (снят�
 2. Выполнить Kill-list 3.1-3.4 отдельными коммитами, каждый — с прогоном doctor.
 3. Зафиксировать правило §6 в `CLAUDE.supervisor.md` + `CONTEXT.md`.
 4. T3-T5 — в бэклог «по инциденту», не в текущий план.
+
+## 8. Kill-list 2 (по трассам cc119-fire16)
+
+Источник — не чтение кода «вообще», а три реальные прогона одного тикета
+(`cc119-fire16`, `-retry1`, `-retry2` + `launcher.stdout.log`, `summary.json`).
+
+**Эвиденс провала.** fire16: `DECLARED PATHS` без `tests/fire_color16_test.py` →
+`CONTRACT-LOCK DENY: tests/fire_color16_test.py` ×2 → turn 1 = 1534 s, out=**62463**
+токенов, `rc=143` (SIGTERM на 3033 s). retry1: тот же DENY → `TURN-TIMEOUT 1800s`
+(silent stall). retry2: путь добавлен в `DECLARED PATHS` → **PASS за 276.7 s**.
+Разница между провалом и успехом — одна строка в шапке тикета.
+
+| # | Механизм | Трасса | Native | Вердикт |
+|---|---|---|---|---|
+| A | `prepare_workspace` квартинит **любой** declared path → правка pre-existing теста превращается в «воссоздай дословно из `git show`» | fire16/retry1 (DENY-петля), retry2 (PASS, путь объявлен) | нет прямого; cli.js не знает про «pre-existing only» | **SPLIT**: `edit:` ≠ `test:` |
+| 1 | `PREFIX-BREAK` ложен на turn 1 (`elif inp > 4000`, нет baseline) | все 3 лога: `[PREFIX-BREAK WARN] turn 1 … > 4000 baseline`, `prefix_break:true` в summary | usage есть нативно; метрика — своя | **DELETE** ветку turn-1 |
+| 2 | `_required_context_window()` читает `CLAUDE_CODE_AUTO_COMPACT_WINDOW` из settings, где ключа **нет** (переехал в env `P0-launch.sh:106-107`) | — | cli.js читает только env (rQ) | **DELETE** мёртвую ветку + доки |
+| 3 | preflight требует `n_ctx >= 123000`, хотя cli.js делает `min(окно_модели, env)` | `PREFLIGHT: n_ctx=123136 >= 123000` | cli.js `rQ`: `Math.min(Z18(q), env)` | **VERIFY/ALIGN** |
+| 4 | Баннер `STANOK 4.2 RUNNER` в коде + docstring обещает «prioritized assert/diff search» | `launcher.stdout.log:1` | — | **DELETE** (словарь/доки) |
+| D | Ручной `<verification_result>` + повторный `query()` вместо нативного Stop-hook | `stanok.py:1245-1261` | cli.js `{decision:["approve","block"], reason, stopReason}` — hook сам пере-приглашает модель | **SPIKE** |
+
+### 8.A Деталь (A): `edit:` — самое дорогое
+
+Квартинится **каждый** declared path (`stanok.py:514`), т.е. любой объявленный путь =
+«будет создан с нуля». Для тикета, который *меняет* pre-existing тест (cc119: семантика
+16-цвета меняется), это неверно: файл уносят, потом `contract_lock` запрещает его трогать
+(манифест снимается ПОСЛЕ карантина, поэтому воссозданный файл не защищён — режим
+«воссоздай verbatim» есть костыль поверх костыля). Решение — различить намерение в шапке:
+
+- `test:`/`impl:`/`docs:` = **create** → квартинится (как сейчас);
+- `edit: <path>` = **modify in place** → НЕ квартинится, остаётся в `mutable_paths`
+  (hook разрешает, манифест освобождает).
+
+Неснижаемый инвариант (защита *необъявленных* тестов) сохраняется; уходит только
+невыполнимая инструкция «recreate verbatim from `git show HEAD`».
+
+### 8.D Деталь (D): нативный Stop-hook вместо своего retry-протокола
+
+cli.js (schema `wBz`): hook может вернуть `{decision:"block", reason, stopReason}` и
+**сам** пере-пригласить модель в той же сессии. Хуки станка уже in-process на хосте
+(`ClaudeAgentOptions.hooks`), а `verify_gate` тоже бегает на хосте (`_run_one_test`,
+`stanok.py:566`) — значит Stop-hook может вызвать `verify_gate` и вернуть `block+reason`.
+Это замена ручного XML-протокола (`<verification_result>`) нативным примитивом. Требует
+spike на 2.1.88 (семантика `Stop`+`block`, отсутствие двойного вердикта) — не слепая замена.
