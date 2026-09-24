@@ -119,3 +119,12 @@ ONLY:
   output — and even then the Bash tool result text must be checked for sandbox errors.
 - Polling Opik via curl in a loop (repeated status queries). One-off fetches AFTER the
   run has completed are allowed; never poll Opik while the machine is running.
+
+## 7. Primitive-first (cli.js first)
+
+Before adding any harness mechanism in `launcher/`, grep the pinned
+`~/git/claude-code-2.1.88/cli.js` + SDK `0.2.139`. If a native primitive exists,
+**configure it — do not reimplement it**. Every new mechanism in a ticket must cite
+either (a) an incident with `evidence/` proof, or (b) the native primitive it replaces.
+No citation → reject the mechanism. A mechanism is deleted once its incident class is
+closed natively (see `specs/REVIEW-KISS-CLI-FIRST-2026-09-24.md` §6).
