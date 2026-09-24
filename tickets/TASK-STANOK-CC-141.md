@@ -37,11 +37,15 @@ Root cause, source-verified in `cli.js` 2.1.88:
 ## Change
 
 - `sandbox.py`: drop the host `makedirs`/`chmod`; add
-  `--tmpfs /tmp/claude-<uid>:uid=<uid>,gid=<gid>,mode=700` next to the
+  `--tmpfs /tmp/claude-<uid>:uid=<uid>,gid=<gid>,mode=700,exec` next to the
   `/home/stanok` HOME tmpfs. The container uid equals ours (`--user`), so the
   path matches `Na1()`. A tmpfs (not a host bind) keeps it hermetic, kills it
   with the container, and — the whole point — makes it exist **before** the CLI
-  starts, so the bind is emitted from the very first invocation.
+  starts, so the bind is emitted from the very first invocation. `exec` is
+  required for parity: the nested runtime exports `TMPDIR=<this dir>`
+  (`aG8()`), so a tool/test writing a temp script to `$TMPDIR` and running it
+  must not hit docker's default `noexec` (upstream `/tmp/claude` is a plain
+  dir) — the cwd-file itself is a `>|` redirect target, never executed.
 - `launch.sh`: comment corrected; the host-side create stays for the host
   (no-sandbox) path.
 
@@ -52,13 +56,15 @@ Root cause, source-verified in `cli.js` 2.1.88:
   - negative: container `ls /tmp/claude-1000` → absent (host pre-create
     invisible); `mkdir -p` outside bwrap then `bwrap --ro-bind / /` writing the
     cwd-file → the exact `Read-only file system` string;
-  - positive: `--tmpfs /tmp/claude-1000:uid=…,gid=…,mode=700` → `DIR-EXISTS`,
-    and nested `bwrap --ro-bind / / --bind /tmp/claude-1000 …` → write OK.
+  - positive: `--tmpfs /tmp/claude-1000:uid=…,gid=…,mode=700,exec` →
+    `DIR-EXISTS`, nested `bwrap --ro-bind / / --bind /tmp/claude-1000 …` →
+    write OK, and a temp script in the dir runs (no `noexec`).
 - New `launcher/tests_harness/test_tmp_bind.py` (4 tests): argv carries exactly
   two `--tmpfs` (HOME + the CLI tmpdir) and **no** `-v` bind targeting
-  `/tmp/claude-<uid>`; e2e docker: the dir exists before any command runs and
-  nested bwrap can write it; e2e negative control: without the tmpfs that same
-  write is EROFS (the regression cannot silently return).
+  `/tmp/claude-<uid>`; e2e docker: the dir exists before any command runs,
+  nested bwrap can write it, and a temp script under it is executable; e2e
+  negative control: without the tmpfs that same write is EROFS (the regression
+  cannot silently return).
 - `bash hooks/doctor.sh` — **162 passed, 0 skipped on a clean tree** (158 + 4).
 
 ## Non-goals / residuals
