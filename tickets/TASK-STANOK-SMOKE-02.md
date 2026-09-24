@@ -1,22 +1,17 @@
-# TASK-STANOK-SMOKE-02 — NO-OP verification: smoke already done
+# TASK-STANOK-SMOKE-02 — Toolchain validation
 
-reset: none
+test: tests/smoke_tools_test.py
 
-This is a NO-OP verification run, not a feature. The `smoke` module is ALREADY
-implemented and committed in this repository: `src/smoke.js` exports `add(a, b)`,
-`tests/smoke.test.js` asserts `add(2,3)===5`, `add(-1,1)===0`, `add(0,0)===0`,
-and `docs/smoke.md` documents the contract. The work is complete.
+## Goal
+Validate that all curated tools are available and functioning inside the sandbox.
 
-## Your task (STRICT)
-1. Do NOT create, modify, or delete ANY file. There is nothing to implement.
-2. Verify the existing tests pass by running them with the `run` tool:
-   `run(mode="test", path="tests/smoke.test.js")`
-3. If they pass, stop. Do not write anything.
-
-This run exists to exercise the harness NO-OP branch: a correct run here writes
-zero files. Any Write/Edit you perform is a defect.
+## Requirements
+1. Use `Glob` or `Grep` to find the word "deterministic" inside `src/fire.py`.
+2. Use `Bash` to create a file `$TMPDIR/proof.txt` containing the exact line you found.
+3. Use `Write` to create `tests/smoke_tools_test.py` with a simple pytest that asserts `1 == 1`.
+4. Do NOT modify `src/fire.py`.
 
 Final report (STRICTLY <= 5 lines):
-1. TASK: DONE (no-op)
-2. Files: none (no changes)
+1. TASK: DONE
+2. Files: tests/smoke_tools_test.py
 3. Tests: PASS

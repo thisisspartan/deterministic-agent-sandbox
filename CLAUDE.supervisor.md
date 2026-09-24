@@ -35,18 +35,19 @@ Procedure before every launch:
 
 ## 3. Pipeline: launch → validate → next ticket
 
-Three calls, in order, from the project ROOT. This is the ONLY allowed
-waiting pattern (verified against CLI 2.1.88 + stanok.py, 2026-09-23):
+Two calls, in order, from the project ROOT. `--follow` collapses the launch
+and the wait into ONE background task, so that task's completion notification
+IS the verdict trigger (CC-140: before it, the wait was a separate task that
+could be forgotten — the SMOKE-02 run launched `--background`, wrote "waiting",
+and ended its turn without the wait task, so nothing ever returned to the TUI):
 
-1. **Launch (foreground Bash — returns in seconds):**
-   `./stanok/launch.sh run tickets/TASK-STANOK-CC-NNN.md <label> --background`
-   The parent waits ≤60 s for the child's `.running` marker: rc=0 = launched,
-   rc=17 = launch failure (read the error text; do not retry blindly).
-2. **Wait (ONE Bash call with `run_in_background: true`):**
-   `timeout 2700 bash -c 'while ./stanok/launch.sh status <label> | grep -q running; do sleep 5; done'`
-   The supervisor does NOTHING until the completion notification arrives
-   (no tools, no messages, no status checks).
-3. **Read the result (after the notification, exactly ONCE):**
+1. **Launch + wait (ONE Bash call with `run_in_background: true`):**
+   `./stanok/launch.sh run tickets/TASK-STANOK-CC-NNN.md <label> --background --follow`
+   The task returns only when the run is terminal; the child's `.running` marker
+   confirms the launch (a failure prints rc=17 immediately, no waiting). The
+   supervisor does NOTHING while it runs (no tools, no messages, no status
+   checks).
+2. **Read the result (after the completion notification, exactly ONCE):**
    `stanok/evidence/<label>/summary.json` via the Read tool — NOT TaskOutput
    (deprecated in CLI 2.1.88: "prefer Read on the task output file path").
 
@@ -56,14 +57,16 @@ It is categorically FORBIDDEN to poll status step-by-step through repeated dialo
 It is categorically FORBIDDEN to read task logs, files in `/tmp/claude-*`, `.output`, `.launch.log`,
 or to `tail`/`cat` logs while the machine is running.
 
-1. The wait is the SINGLE background Bash task from step 2. Between the launch
-   and the completion notification the supervisor sends NO messages and calls
-   NO tools (no TaskCreate/TaskUpdate, no status checks, no TaskOutput).
-2. On the notification: read `summary.json` exactly ONCE (step 3).
+1. The wait is the SINGLE background Bash task from step 1 (`--follow` blocks
+   inside it). Between the launch and the completion notification the supervisor
+   sends NO messages and calls NO tools (no TaskCreate/TaskUpdate, no status
+   checks, no TaskOutput). NEVER launch `run --background` without `--follow`
+   — that is a launch with no notification, i.e. nothing ever returns to the TUI.
+2. On the notification: read `summary.json` exactly ONCE (step 2).
 3. `dead` or `missing` (no summary.json) → the run was aborted (process died
    without saving the report): read the last 30 diagnostic lines from
    `/tmp/stanok-logs/<label>.launch.log`.
-4. 45-min cap: the wait task exits rc=124 → run `./stanok/launch.sh status
+4. 45-min cap: the `--follow` wait exits rc=124 → run `./stanok/launch.sh status
    <label>`; if still `running` → `./stanok/launch.sh stop <label>`.
 
 ### Verdict from summary.json
@@ -103,7 +106,8 @@ ONLY:
 ## 6. Forbidden
 
 - Writing/editing code in `stanok/src/`, `stanok/tests/`, `stanok/docs/` directly.
-- Deviating from the 3-call pattern in section 3 (launch foreground → ONE background wait task → Read summary.json): no combined `&&` one-liner, no foreground blocking wait, no extra status checks.
+- Deviating from the 2-call pattern in section 3 (ONE background `run --background --follow` → Read summary.json): no foreground blocking wait, no extra status checks, no separate hand-rolled wait loop.
+- Launching `run --background` without `--follow` (no completion notification is ever delivered — the SMOKE-02 failure; use `--follow`).
 - Calling `TaskCreate`, `TaskUpdate` or sending intermediate messages between the machine launch and the completion notification (this clogs the single server slot with parasitic 65k+ token requests and hangs the machine).
 - Launching the machine if the current supervisor session context exceeds 50k tokens (first ask the human for `/compact`).
 - Reading raw log files (`/tmp/claude-*`, `*.output`, `*.launch.log`) while the machine is running.
