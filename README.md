@@ -1,81 +1,154 @@
-# Pet project: autonomous code via a Claude Code machine
+# stanok — a Claude Code machine on a local model
 
-Two-level template for starting a new project "from interview to code":
+An autonomous "machine": takes a text ticket, solves it in a single TDD session
+(monolithic — no subagents) under deterministic hooks and a Docker container
+boundary (with the claude-code native bwrap sandbox running inside it),
+runs tests through the project's own `scripts/run.sh`, and outputs the result
+to `evidence/<label>/summary.json`.
 
-- **Root of this repo** — the control room (L1 supervisor): interview (grill) →
-  spec → tickets → machine launch → validation. Role — `CLAUDE.supervisor.md`
-  (injected by `P0-launch.sh` so it does NOT leak into the machine as a role).
-- **`stanok/`** — git submodule: a Claude Code machine on a local model.
-  Autonomous TDD cycle under deterministic hooks inside a Docker container,
-  tests run through the project's own `scripts/run.sh`,
-  result — `stanok/evidence/<label>/summary.json`.
+This is infrastructure. The project code (`src/`, `tests/`, `docs/`) and the tickets
+live in the parent repo (see the README one level up). This repo is a
+pluggable git submodule for any project.
 
-Tickets and specs live here, in the root. The machine sees the root read-only
-(sandbox mount), but each ticket is self-contained and passed to it as text
-in the prompt — it never needs the rest.
+## Requirements
 
-## How it works
+- Docker (the machine boundary; the image bakes in Node.js + Claude Code
+  CLI 2.1.88 — hermetic, no host bind-mounts), whatever runtime the
+  project's `scripts/run.sh` uses
+- A local llama-server, Anthropic-compatible (`STANOK_SERVER_URL`)
+- The parent repo must NOT contain a `CLAUDE.md` above this repo
+  (the control-room role is set via `--append-system-prompt-file`,
+  otherwise the machine auto-loads the parent CLAUDE.md — role leak)
 
-Two separate git repos: the **root** is the control room (L1 supervisor),
-`stanok/` is a git submodule — the machine. The supervisor never writes code;
-it only produces tickets and launches the machine, which returns a typed
-`summary.json` for validation.
+## Setup
 
-Full architecture diagram and machine internals — `stanok/README.md`
-(single source of truth; this README deliberately does not copy it).
+```bash
+./setup.sh                                   # .venv + claude-agent-sdk + CLI staging + docker image build
+bash hooks/doctor.sh                         # all doctor checks must pass (pytest)
+uv run --directory . pytest launcher/tests_harness --collect-only -q | tail -1  # check count
+```
+
+## Running
+
+```bash
+./launch.sh run <ticket.md> <label> [--background|--direct] [--local-retries N] [-- extra...]
+# `run` is optional: `./launch.sh <ticket.md> <label> ...` is equivalent.
+# The ticket is resolved against three bases (project root -> machine root -> as given),
+# so the canonical call from the project root is: `./stanok/launch.sh tickets/x.md <label>`.
+# The shim cd's into the machine root (the directory containing launch.sh):
+# the call works from any cwd; --background with a nonexistent ticket fails
+# immediately (rc=13) instead of spawning a dead detach.
+./launch.sh status <label>      # JSON: running/dead/done/missing
+./launch.sh stop <label>        # interrupt the run (TERM by pid from .running)
+```
+
+- `--background` — detach to the background (observe: `tail -f /tmp/stanok-logs/<label>.launch.log`)
+- `--direct` — headless directly, ticket path relative to the repo
+- `--local-retries N` — in-session retry turns on verifier FAIL (default 2)
 
 ## Structure
 
 ```
-./
-├── CLAUDE.supervisor.md   # L1 role (grill → spec → ticket → run)
-├── CONTEXT.md             # persistent project facts (filled in by the grill)
-├── P0-launch.sh           # interactive entry: claude + local model + role
-├── specs/                 # specs and STATUS.md (created by the grill)
-├── tickets/               # TASK-STANOK-CC-NNN.md (created by the grill)
-└── stanok/                # git submodule — the machine (self-contained, see its README)
+launcher/stanok.py            — THE single Runner (CLI run/status/stop,
+                                gates, background self-spawn, Job/Attempt,
+                                typed summary.json)
+launcher/sandbox.py           — the Docker boundary (R2, former sandbox-run.sh):
+                                repo mounted read-only with writable carve-outs
+                                (src/, tests/, docs/, scripts/, evidence/);
+                                .git read-only; cap-drop=ALL, no-new-privileges,
+                                resource limits
+launch.sh                     — thin shim: exec venv-python launcher/stanok.py
+Dockerfile                    — the machine image (debian + toolchain +
+                                uv + claude-agent-sdk + pytest + Node.js +
+                                Claude Code CLI 2.1.88 + bubblewrap + socat
+                                + jq)
+hooks/                        — doctor (thin pytest wrapper, R5; the TDD
+                                verifier is in-process in
+                                launcher/stanok.py, R1)
+launcher/tests_harness/       — the doctor checks as pytest (R5)
+.claude/settings.stanok.json  — the machine config (allow/deny,
+                                native sandbox + allowedDomains)
+CLAUDE.md                     — the machine role (auto-loaded inside the repo)
+setup.sh                      — environment deployment (.venv + docker image)
+src/ tests/ docs/ scripts/    — the machine working directories (empty at start)
 ```
 
-## Quick start
+## Configuration (all via env)
 
-1. **Machine:** `cd stanok && ./setup.sh` → `.venv` + `claude-agent-sdk`
-   + Docker machine image. Check: `bash hooks/doctor.sh` (expected —
-   all green; see `stanok/README.md`).
-2. **Server:** start a local llama-server (Anthropic-compatible), address —
-   `STANOK_SERVER_URL` (default `http://127.0.0.1:8080`).
-3. **Control room:** `./P0-launch.sh` — opens an interactive supervisor session
-   on the local model. Start with the grill: interview → CONTEXT.md → specs → tickets.
-4. **Ticket run:**
-   `./stanok/launch.sh tickets/TASK-STANOK-CC-NNN.md <label> --background`
-   Observe: `./stanok/launch.sh status <label>`.
+| Variable             | Default                   | What it sets                     |
+|----------------------|---------------------------|----------------------------------|
+| `STANOK_SERVER_URL`  | `http://127.0.0.1:8080`   | llama-server                     |
+| `STANOK_MODEL`       | `Qwen3.8-27B-MTP`         | local model                      |
+| `STANOK_CLAUDE_BIN`  | `claude` (from PATH)      | claude-code binary               |
+| `STANOK_PY`          | `<repo>/.venv/bin/python` | python for the Runner (host-side; remapped to the image python inside the container) |
+| `STANOK_REPO`        | `<repo>/stanok`           | machine root (override)          |
+| `STANOK_EVIDENCE`    | `<repo>/evidence`         | evidence dir (summary.json, logs) |
+| `STANOK_LOCAL_RETRIES` | `2`                     | in-session retry turns on verifier FAIL |
+| `STANOK_REQUIRED_WINDOW` | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` from settings | preflight: minimal server `n_ctx` (rc=20 if less) |
+| `STANOK_SKIP_SERVER_CHECK` | unset                   | `1` — skip the preflight `/props` check entirely |
+| `STANOK_OPIK_URL`      | `http://localhost:8080` | Opik backend (trace-count check) |
+| `STANOK_DOCKER_IMAGE`| `stanok-machine:latest`   | the machine image                |
+| `STANOK_CONTAINER_MEM` | `4g`                    | container memory limit           |
+| `STANOK_CONTAINER_PIDS`| `512`                   | container pids limit             |
+| `STANOK_CONTAINER_CPUS`| `2`                     | container CPU limit              |
 
-## Role isolation (important)
+## How it works (briefly)
 
-Claude Code auto-loads `CLAUDE.md` from cwd AND from parent directories. If a `CLAUDE.md`
-lies in the project root, the machine (cwd=`stanok/`) will pick it up as its role. Therefore:
-the control-room role lives in `CLAUDE.supervisor.md` and is injected explicitly via
-`--append-system-prompt-file`. **Do not create a `CLAUDE.md` in the root.**
+1. `launch.sh` (thin shim → Runner) — the Runner passes the fail-closed
+   gates in this order: label-guard (rc=15) -> ROLE-LEAK (rc=24) ->
+   ticket (rc=13) -> dirty-tree (rc=22, uncommitted changes — start
+   forbidden) -> then: `--background` spawns a detached self-run, or sync
+   runs either in-process (host no-sandbox / container side — the lock
+   (rc=21) is taken there) or as a supervised `docker run`
+   (`launcher/sandbox.py`; the container-side Runner re-runs the gates and
+   takes the lock). The image preflight (the image LABEL `stanok.digest`
+   must equal sha256(Dockerfile + scripts/run.sh) and every stack's
+   preflight command must succeed inside the image, `docker run --rm`)
+   no longer blocks the launch path (CC-106) — it runs in doctor
+   (`test_docker_image_digest_matches`): a stale image is a doctor failure,
+   not a mid-run ENV-FAIL -> ticket header (rc=13: an `impl:`/`test:`/`docs:` line
+   or `reset: none` is required — the ticket-scoped invariant, W2.1; literal
+   paths are validated: relative, no `..`, top-level dir inside
+   src/tests/docs/scripts) -> pre-flight `/props` of the server (rc=20;
+   fail-closed also when the server `n_ctx` is below the required window).
+   The dirty-tree gate is fail-closed: no destructive reset/clean — the
+   operator commits before launch.
+2. The Runner opens ONE Claude session (cwd = repo) inside the Docker
+   container (`launcher/sandbox.py`): settings from `.claude/settings.stanok.json`,
+   tools Read/Write/Edit/Grep/Glob/Bash — Bash is native and UNRESTRICTED;
+   the boundary is the container (cap-drop=ALL, no-new-privileges,
+   resource limits) plus the claude-code native sandbox (bwrap per Bash
+   command, `enableWeakerNestedSandbox`, network restricted to
+   `allowedDomains`); subagents (Agent/Task) are denied.
+3. Monolithic TDD in a single session: the model writes the test first
+   (red), then the implementation (green), then docs. After every Write/Edit
+   under `tests/`: the in-process PostToolUse hook (launcher/stanok.py,
+   SDK `hooks` option — no shell command) runs the matching test through
+   `scripts/run.sh` and injects the verdict (RED CONFIRMED) into the
+   session — the TDD red phase is harness-provided, not model discipline.
+   The contract_lock (pre-existing `tests/` + `scripts/run.sh`) is enforced
+   at two points: a PreToolUse deny (before the write hits disk, SDK
+   callback hook) and the post-turn SHA256 manifest diff (fallback —
+   catches Bash-mediated writes the hook cannot see).
+4. On verifier FAIL the Runner appends an in-session retry turn
+   (`--local-retries`, default 2) with the failure block.
+5. Final: `verifier: PASS/FAIL`, `probe_result: CLEAN-FIRST |
+   PASS-AFTER-LOCAL-RETRY | VERIFY-FAIL | EARLY-ABORT`, Runner rc — typed
+   `evidence/<label>/summary.json` (no regex parsing of stdout).
 
-## Publishing to a git host (GitHub in this skeleton)
+## Architecture references
 
-This repo and `stanok/` are TWO separate git repos.
+The security boundary, mount layout, integrity contours, the `run.sh`
+contract, and the rc namespace are documented factually in:
 
-1. Create an empty repo on your git host for the machine (e.g. `stanok-skeleton`) and push:
-   ```
-   cd stanok && git remote add origin <host-url-stanok> && git push -u origin main
-   ```
-2. In the root repo update the submodule URL:
-   ```
-   git config -f .gitmodules submodule.stanok.url <host-url-stanok>
-   git submodule sync
-   ```
-3. Push the root repo (the parent). After cloning in a new place:
-   ```
-   git clone --recurse-submodules <host-url-parent>
-   cd stanok && ./setup.sh
-   ```
+- `specs/HANDOFF-ARCH-REVIEW.md` — component map, stack-coupling seams.
+- `specs/SPEC-SESSION-PLAN-2026-09-24.md` — file-policy consumers (SessionPlan).
+- `specs/REVIEW-KISS-CLI-FIRST-2026-09-24.md` — native vs hand-rolled inventory.
+- `CLAUDE.supervisor.md` — verdict contract and stop conditions.
 
-## Configuration (env, see the machine README)
+## Commits
 
-`STANOK_SERVER_URL`, `STANOK_MODEL`, `STANOK_PROXY`, `CLAUDE_BIN`,
-`SEARCH_ENV_FILE`, `STANOK_PY` — all overridable from the environment.
+The agent does NOT commit: `.git` is mounted read-only inside the container,
+so git writes fail at the filesystem layer (reads — `git log`/`blame`/`diff`
+— work). The operator commits (outside the container) — the dirty-tree gate
+(rc=22) is the checkpoint: a run starts only on a clean tree.
