@@ -72,9 +72,12 @@
 existence-check без претензии на семантику. Крайний случай (EROFS) ловится native
 `failIfUnavailable` + первым Bash-вызовом, а не питоновским предсказанием.
 
-**3.2 `_stack_preflights` + `_image_digest`/`preflight_image` — SIMPLIFY.**
-Это «готовность инструментов», а не политика прогона. Один `doctor.sh`-чек заменяет оба;
-rc=16/rc=25 из таблицы L1 схлопываются в doctor-fail.
+**3.2 `_stack_preflights` + `_image_digest`/`preflight_image` — УЖЕ СДЕЛАНО (CC-106).**
+`preflight_image` больше не на launch-path (нет `early_abort(25)`); его вызывает только
+doctor (`test_doctor.py::test_docker_image_digest_matches`). Резидуал закрыт в CC-123:
+устаревшие «rc=25» в логах и в stop-conditions `CLAUDE.supervisor.md` убраны (rc=25
+недостижим; provenance образа — doctor-чек). Отдельный модуль для этих функций не
+выделялся — перенос без инцидента был бы рефакторингом ради рефакторинга.
 
 **3.3 `_extract_smart_diff` + `NOISE_LINE_PATTERNS` — SIMPLIFY до сырого хвоста.**
 Приоритетный regex — JS/TAP (`strictequal`, `not ok N`), для Python только низший тир

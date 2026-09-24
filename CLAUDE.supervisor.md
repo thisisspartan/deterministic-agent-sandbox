@@ -87,9 +87,9 @@ or to `tail`/`cat` logs while the machine is running.
 ONLY:
 1. All tickets done → final report to the human.
 2. 3 consecutive failed attempts on one ticket.
-3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image), `rc=25` (image preflight — digest mismatch or runner missing; rebuild via `./setup.sh`).
+3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image).
    `rc=24` is escalated to the human IMMEDIATELY — it is not a ticket defect; do not burn 3 retries on it.
-   `rc=16`/`rc=25` are image defects, not ticket defects: do NOT retry the ticket — call the human to rebuild the image.
+   `rc=16` is an image defect, not a ticket defect: do NOT retry the ticket — call the human to rebuild the image. (Image provenance — digest/runner availability — is a `doctor.sh` check, not a launch code; run `./setup.sh` if doctor flags it.)
 4. Architectural dead end in `CONTEXT.md` / `specs/`.
 
 ## 5. Subagents and context hygiene
