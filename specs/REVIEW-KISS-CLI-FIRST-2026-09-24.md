@@ -24,7 +24,7 @@
 | Native (cli.js / SDK 0.2.139) | Факт |
 |---|---|
 | Hook-события | `PreToolUse, PostToolUse, Stop, SubagentStop, PreCompact, SessionStart, SessionEnd, UserPromptSubmit, Notification` — все есть (`cli.js`); in-process колбэки — `ClaudeAgentOptions.hooks` (`types.py:2064`) |
-| Блокирующий `Stop` hook | `decision`/`stopReason` в `cli.js` (48/14 вхождений) — CLI сам может пере-пригласить модель; семантику проверить перед adopt |
+| `Stop` hook | `continue:false`/`stopReason` → `preventContinuation` (turn END, не re-prompt); `decision:"block"` → `permissionBehavior:"deny"` (permission-путь). Primitive «пере-пригласить модель» в 2.1.88 НЕ подтверждён (CC-130) — retry-loop остаётся своим |
 | Permission-режимы и правила | `permission_mode` (`dontAsk`/`acceptEdits`/…), `deny`-правила `Read(...)`/`Edit(...)` — уже используются |
 | Native sandbox | `sandbox.filesystem.allowWrite/denyWrite`, `sandbox.failIfUnavailable` — уже используется |
 | Worktree | `--worktree` (`cli.js`, 15 вхождений) + инструмент `EnterWorktree` |
@@ -37,7 +37,7 @@
 
 | Механизм (`stanok.py`/`sandbox.py`) | Инцидент, который закрывает | Native-аналог | Вердикт |
 |---|---|---|---|
-| `run_continuous_session` + `<verification_result>` retry-loop | ретраи внутри одной сессии (KV-кэш) | `Stop` hook (block) / `resume` | **KEEP** — вердикт внешний (host), in-container hook его не даст |
+| `run_continuous_session` + `<verification_result>` retry-loop | ретраи внутри одной сессии (KV-кэш) | `Stop`-hook `continue:false` **останавливает**, не пере-приглашает (CC-130) | **KEEP** — вердикт внешний (host); native re-prompt primitive не подтверждён |
 | `_pretooluse_lock_hook` + `_tests_manifest` (contract_lock) | ослабление pre-existing тестов/`run.sh` | нет прямого (deny-правило не различает новый TDD-файл) | **KEEP** (это настоящий инвариант) |
 | `_verifier_hook` (RED-CONFIRMED) | TDD-дисциплина | PostToolUse hook — уже native-механизм | **KEEP** |
 | `_resolve_sandbox_path` + `sandbox_config_gate` | CC-075/CC-107 (EROFS на первом Bash) | cli.js сам резолвит пути | **DELETE** (§3.1) |
@@ -135,12 +135,12 @@ T3/T4 (динамические RW-mounts от `mutable_paths`) и T5 (снят�
 
 | # | Механизм | Трасса | Native | Вердикт |
 |---|---|---|---|---|
-| A | `prepare_workspace` квартинит **любой** declared path → правка pre-existing теста превращается в «воссоздай дословно из `git show`» | fire16/retry1 (DENY-петля), retry2 (PASS, путь объявлен) | нет прямого; cli.js не знает про «pre-existing only» | **SPLIT**: `edit:` ≠ `test:` |
-| 1 | `PREFIX-BREAK` ложен на turn 1 (`elif inp > 4000`, нет baseline) | все 3 лога: `[PREFIX-BREAK WARN] turn 1 … > 4000 baseline`, `prefix_break:true` в summary | usage есть нативно; метрика — своя | **DELETE** ветку turn-1 |
-| 2 | `_required_context_window()` читает `CLAUDE_CODE_AUTO_COMPACT_WINDOW` из settings, где ключа **нет** (переехал в env `P0-launch.sh:106-107`) | — | cli.js читает только env (rQ) | **DELETE** мёртвую ветку + доки |
-| 3 | preflight требует `n_ctx >= 123000`, хотя cli.js делает `min(окно_модели, env)` | `PREFLIGHT: n_ctx=123136 >= 123000` | cli.js `rQ`: `Math.min(Z18(q), env)` | **VERIFY/ALIGN** |
-| 4 | Баннер `STANOK 4.2 RUNNER` в коде + docstring обещает «prioritized assert/diff search» | `launcher.stdout.log:1` | — | **DELETE** (словарь/доки) |
-| D | Ручной `<verification_result>` + повторный `query()` вместо нативного Stop-hook | `stanok.py:1245-1261` | cli.js `{decision:["approve","block"], reason, stopReason}` — hook сам пере-приглашает модель | **SPIKE** |
+| A | `prepare_workspace` квартинит **любой** declared path → правка pre-existing теста превращается в «воссоздай дословно из `git show`» | fire16/retry1 (DENY-петля), retry2 (PASS, путь объявлен) | нет прямого; cli.js не знает про «pre-existing only» | **DONE** (CC-125): `edit:` ≠ `test:` |
+| 1 | `PREFIX-BREAK` ложен на turn 1 (`elif inp > 4000`, нет baseline) | все 3 лога: `[PREFIX-BREAK WARN] turn 1 … > 4000 baseline`, `prefix_break:true` в summary | usage есть нативно; метрика — своя | **DONE** (CC-126): ветка turn-1 удалена |
+| 2 | `_required_context_window()` читает `CLAUDE_CODE_AUTO_COMPACT_WINDOW` из settings, где ключа **нет** (переехал в env `P0-launch.sh:106-107`) | — | cli.js читает только env (rQ) | **DONE** (CC-127): env-only |
+| 3 | preflight требует `n_ctx >= 123000`, хотя cli.js делает `min(окно_модели, env)` | `PREFLIGHT: n_ctx=123136 >= 123000` | cli.js `rQ`: `min(lf(model), env) − reserve` | **VERIFIED — no change** (§8.3) |
+| 4 | Баннер `STANOK 4.2 RUNNER` в коде + docstring обещает «prioritized assert/diff search» | `launcher.stdout.log:1` | — | **DONE** (CC-129) |
+| D | Ручной `<verification_result>` + повторный `query()` вместо нативного Stop-hook | `stanok.py:1245-1261` | cli.js: `continue:false`→`preventContinuation` (СТОП); `decision:block`→permission-deny. Re-prompt примитива НЕТ | **REJECT — keep loop** (§8.D) |
 
 ### 8.A Деталь (A): `edit:` — самое дорогое
 
@@ -157,11 +157,25 @@ T3/T4 (динамические RW-mounts от `mutable_paths`) и T5 (снят�
 Неснижаемый инвариант (защита *необъявленных* тестов) сохраняется; уходит только
 невыполнимая инструкция «recreate verbatim from `git show HEAD`».
 
-### 8.D Деталь (D): нативный Stop-hook вместо своего retry-протокола
+### 8.3 Деталь (3): окно — VERIFIED, менять нечего
 
-cli.js (schema `wBz`): hook может вернуть `{decision:"block", reason, stopReason}` и
-**сам** пере-пригласить модель в той же сессии. Хуки станка уже in-process на хосте
-(`ClaudeAgentOptions.hooks`), а `verify_gate` тоже бегает на хосте (`_run_one_test`,
-`stanok.py:566`) — значит Stop-hook может вызвать `verify_gate` и вернуть `block+reason`.
-Это замена ручного XML-протокола (`<verification_result>`) нативным примитивом. Требует
-spike на 2.1.88 (семантика `Stop`+`block`, отсутствие двойного вердикта) — не слепая замена.
+cli.js: `lf(q,K)` возвращает окно модели; для модели, которой нет в таблице
+(`oT1` → локальный `Qwen3.8-27B-MTP`), это дефолт **`sT1 = 200000`**
+(`[1m]`-путь отключён `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`). `rQ`: `min(200000, env=123000)
+− reserve`, где reserve `= min(Z18(q), o3Y=20000)`, а `Z18` при `CLAUDE_CODE_MAX_OUTPUT_TOKENS=20000`
+тоже 20000. То есть нативное эффективное окно = **123000** = ровно `STANOK_REQUIRED_WINDOW`.
+Серверу нужен `n_ctx ≥ окно` (prompt + output-reserve), ибо компакция триггерится на
+`окно − reserve`; `n_ctx=123136 ≥ 123000` — корректно. Preflight **не строже нативного**;
+код не меняется, только факт зафиксирован.
+
+### 8.D Деталь (D): Stop-hook — REJECT (premise был неверен)
+
+Проверка по сорсам 2.1.88 отменяет гипотезу из §2/§8.D. Общий разбор hook-результата:
+`if (J.continue===!1){preventContinuation=!0; if(J.stopReason)stopReason=…}` — это
+**остановка** turn'а, а не пере-приглашение. `decision:"block"` разворачивается в
+`permissionBehavior:"deny"` + `blockingError` — это **permission-путь** (PreToolUse),
+для `Stop` это не «продолжи с reason». Примитива «заблокировать завершение и впрыснуть
+новый промпт» в 2.1.88 **нет**. Вывод: ручной `<verification_result>` + повторный
+`query()` — не костыль поверх native, а необходимость (вердикт внешний, host-side).
+Loop остаётся; §2-строка «CLI сам может пере-пригласить модель» была оптимистичной и
+исправлена.

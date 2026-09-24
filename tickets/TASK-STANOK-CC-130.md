@@ -32,3 +32,17 @@ so a `Stop` hook could compute the verdict natively.
 
 No code change to `run_continuous_session` in this ticket. The retry loop keeps
 working; the spike decides whether it is retired.
+
+## Result (2026-09-24) — REJECT: the premise was wrong
+
+Source read (pinned 2.1.88, no live run needed): the generic hook-result parser
+does `if (J.continue===!1){ H.preventContinuation=!0; if(J.stopReason)H.stopReason=… }`
+— `continue:false` **stops** the turn, it does not re-invite the model. And
+`decision:"block"` lowers to `permissionBehavior:"deny"` + `blockingError` — the
+permission path for PreToolUse, not a Stop re-prompt. There is **no** primitive in
+2.1.88 for "block the stop and inject a new prompt".
+
+Verdict: keep the hand-rolled `<verification_result>` + `query()` loop — it is not
+a crutch over a native feature, it is required (the verdict is external/host-side).
+REVIEW §1/§2/§8.D corrected: the earlier "CLI сам может пере-пригласить модель"
+claim was optimistic and is now retracted. No code change.

@@ -36,3 +36,14 @@ source fact.
 
 Whatever changes: `py_compile`; `doctor.sh` green; `test_launcher_preflight.py`
 green.
+
+## Result (2026-09-24) — VERIFIED, no code change
+
+Source facts (pinned 2.1.88): `lf(q)` for a model absent from `oT1`'s table
+returns `sT1 = 200000` (and `[1m]` is disabled by `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`),
+so `rQ` = `min(200000, env=123000) − reserve`, reserve = `min(Z18(q), o3Y=20000)`
+= 20000 (`CLAUDE_CODE_MAX_OUTPUT_TOKENS=20000`). Effective native window = **123000**
+= `STANOK_REQUIRED_WINDOW`. The server must hold window+reserve, and compaction
+triggers at window−reserve — so `n_ctx >= 123000` is exactly right. The preflight
+is not stricter than cli.js; the finding was a false alarm. Documented in
+REVIEW §8.3; no code touched.
