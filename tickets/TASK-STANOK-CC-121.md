@@ -1,7 +1,8 @@
 # TASK-STANOK-CC-121 — Kill-list 3.1: drop the cli.js path-resolver mirror
 
 Supervisor-executed (launcher/ is RO in the container). Follows
-`specs/REVIEW-KISS-CLI-FIRST-2026-09-24.md` §3.1 (T2 = Option B adopted).
+`specs/REVIEW-KISS-CLI-FIRST-2026-09-24.md` §3.1 (T2 was Option B here; it was later burned
+in full — CC-131 / REVIEW §9).
 
 ## Finding
 
