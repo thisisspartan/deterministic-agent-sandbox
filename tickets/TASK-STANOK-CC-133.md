@@ -64,9 +64,10 @@ errors: ["ticket parse error: declared path 'tests/fire_color16_test.py' already
   stale artifact"]
 ```
 
-- `hooks/doctor.sh` — **123 passed, 2 skipped** (was 119/2; +4). The 2 skips are
-  the pre-existing dirty-tree-dependent mock launches (the working tree is dirty
-  while this ticket is uncommitted).
+- `hooks/doctor.sh` — full suite **125 passed, 0 skipped on a clean tree**
+  (+4; 121 after CC-132). Observed as 123 passed/2 skipped while this ticket was
+  uncommitted: those 2 skips are the pre-existing dirty-tree-dependent mock
+  launches, skipped by design whenever the worktree is dirty.
 
 ## Non-goals
 

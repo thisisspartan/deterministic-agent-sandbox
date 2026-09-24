@@ -43,8 +43,10 @@ No behavior change for any valid ticket: the declared-zone set is the same
 `py_compile`; 4 new hermetic tests in `test_session_plan.py` (`test_zones_have_one_source`,
 `test_zone_consumers_read_the_constant` — patches `WRITABLE_ZONES` and watches
 both consumers follow, `test_header_kinds_are_impl_test_docs_edit`,
-`test_scripts_is_a_zone_not_a_kind`); `hooks/doctor.sh` — **119 passed, 2 skipped**
-(was 115/2; +4).
+`test_scripts_is_a_zone_not_a_kind`); `hooks/doctor.sh` — full suite **121 passed
+on a clean tree** (+4; baseline 117). Observed as 119 passed/2 skipped while this
+ticket was uncommitted — the 2 skips are the pre-existing dirty-tree-dependent
+mock launches, which are skipped by design when the worktree is dirty.
 
 ## Non-goals
 
