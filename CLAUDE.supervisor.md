@@ -23,31 +23,51 @@ Verify facts with commands, not from memory.
 2. `specs/STATUS.md` — task state; missing → create after the first grill.
 3. `specs/SPEC-<slug>.md` — requirements + acceptance criteria.
 4. `tickets/TASK-STANOK-CC-NNN.md` — self-contained ticket (NNN — next free number, see CONTEXT.md).
-   The machine sees ONLY the ticket.
+   The machine sees ONLY the ticket. Every MACHINE ticket must carry (CC-160):
+   - a **manifest header** as the first lines — one `impl:`/`edit:`/`test:`/
+     `docs:` line per deliverable (`#`-title and blank lines are allowed inside
+     the header; the first other line ends it). Missing header → rc=13.
+   - a line `run.sh: exists` or `run.sh: bootstrap` stating the entrypoint
+     state (bootstrap ONLY when `scripts/run.sh` is ABSENT — CC-154; declaring
+     `impl: scripts/run.sh` when it exists → rc=13, CC-133).
+   - test-file naming per the stack registry: py → `tests/**/*_test.py`,
+     js → `tests/**/*.test.js` (other names are unclaimed → gate rc=1/rc=2).
 
 ## 2. Gate before launching the machine (strictly synchronous)
 
 `launch.sh` performs cleanup in `stanok/`; the machine fails closed on a dirty tree (rc=22).
+**Absolute paths only (CC-158):** the supervisor shell cwd drifts between Bash
+calls (any `cd` in one call persists into the next), so a relative
+`./stanok/launch.sh` or `git -C stanok` from a drifted cwd dies with
+exit 127 / `fatal: cannot change to`. Use the absolute forms below — never
+rely on cwd.
 Procedure before every launch:
-1. `git -C stanok status --porcelain`
-2. Not empty → `git -C stanok add -A && git -C stanok commit -m "chore: save state before ticket"` (the `chore:` prefix is a maintenance convention only — no git hook enforces it; the operator commits).
-3. Launch ONLY when `stanok/` status is clean. Do not spawn subagents for git checks.
+1. `git -C /home/hermes/darkcast/stanok status --porcelain`
+2. Not empty → `git -C /home/hermes/darkcast/stanok add -A && git -C /home/hermes/darkcast/stanok commit -m "chore: save state before ticket"` (the `chore:` prefix is a maintenance convention only — no git hook enforces it; the operator commits).
+3. **Manifest pre-check (CC-160, mirrors CC-133):** every `impl:`/`test:`/`docs:`
+   path in the ticket must NOT yet exist under `stanok/`, and every `edit:`
+   path MUST exist — verify with `ls` before burning a launch (a violation
+   aborts as rc=13 only after the gate runs).
+4. Launch ONLY when `stanok/` status is clean. Do not spawn subagents for git checks.
 
 ## 3. Pipeline: launch → validate → next ticket
 
-Three calls, in order, from the project ROOT. This is the ONLY allowed
-waiting pattern (verified against CLI 2.1.88 + stanok.py, 2026-09-23):
+Two calls, in order, with ABSOLUTE paths (CC-158 — the supervisor cwd may
+have drifted; `launch.sh` is self-locating, but the path that REACHES it
+must be absolute). `--follow` collapses the launch and the wait into ONE
+background task, so that task's completion notification IS the verdict
+trigger (CC-140: before it, the wait was a separate task that could be
+forgotten — the SMOKE-02 run launched `--background`, wrote "waiting", and
+ended its turn without the wait task, so nothing ever returned to the TUI):
 
-1. **Launch (foreground Bash — returns in seconds):**
-   `./stanok/launch.sh run tickets/TASK-STANOK-CC-NNN.md <label> --background`
-   The parent waits ≤60 s for the child's `.running` marker: rc=0 = launched,
-   rc=17 = launch failure (read the error text; do not retry blindly).
-2. **Wait (ONE Bash call with `run_in_background: true`):**
-   `timeout 2700 bash -c 'while ./stanok/launch.sh status <label> | grep -q running; do sleep 5; done'`
-   The supervisor does NOTHING until the completion notification arrives
-   (no tools, no messages, no status checks).
-3. **Read the result (after the notification, exactly ONCE):**
-   `stanok/evidence/<label>/summary.json` via the Read tool — NOT TaskOutput
+1. **Launch + wait (ONE Bash call with `run_in_background: true`):**
+   `/home/hermes/darkcast/stanok/launch.sh run /home/hermes/darkcast/tickets/TASK-STANOK-CC-NNN.md <label> --background --follow`
+   The task returns only when the run is terminal; the child's `.running` marker
+   confirms the launch (a failure prints rc=17 immediately, no waiting). The
+   supervisor does NOTHING while it runs (no tools, no messages, no status
+   checks).
+2. **Read the result (after the completion notification, exactly ONCE):**
+   `/home/hermes/darkcast/stanok/evidence/<label>/summary.json` via the Read tool — NOT TaskOutput
    (deprecated in CLI 2.1.88: "prefer Read on the task output file path").
 
 ### Waiting and polling (STRICTLY no KV-cache eviction and no log reading into context!)
@@ -56,15 +76,18 @@ It is categorically FORBIDDEN to poll status step-by-step through repeated dialo
 It is categorically FORBIDDEN to read task logs, files in `/tmp/claude-*`, `.output`, `.launch.log`,
 or to `tail`/`cat` logs while the machine is running.
 
-1. The wait is the SINGLE background Bash task from step 2. Between the launch
-   and the completion notification the supervisor sends NO messages and calls
-   NO tools (no TaskCreate/TaskUpdate, no status checks, no TaskOutput).
-2. On the notification: read `summary.json` exactly ONCE (step 3).
+1. The wait is the SINGLE background Bash task from step 1 (`--follow` blocks
+   inside it). Between the launch and the completion notification the supervisor
+   sends NO messages and calls NO tools (no TaskCreate/TaskUpdate, no status
+   checks, no TaskOutput). NEVER launch `run --background` without `--follow`
+   — that is a launch with no notification, i.e. nothing ever returns to the TUI.
+2. On the notification: read `summary.json` exactly ONCE (step 2).
 3. `dead` or `missing` (no summary.json) → the run was aborted (process died
    without saving the report): read the last 30 diagnostic lines from
    `/tmp/stanok-logs/<label>.launch.log`.
-4. 45-min cap: the wait task exits rc=124 → run `./stanok/launch.sh status
-   <label>`; if still `running` → `./stanok/launch.sh stop <label>`.
+4. 45-min cap: the `--follow` wait exits rc=124 → run
+   `/home/hermes/darkcast/stanok/launch.sh status <label>`; if still `running` →
+   `/home/hermes/darkcast/stanok/launch.sh stop <label>`.
 
 ### Verdict from summary.json
 - **C. NO-OP** (`probe_result: "NO-OP-PASS"`):
@@ -87,9 +110,9 @@ or to `tail`/`cat` logs while the machine is running.
 ONLY:
 1. All tickets done → final report to the human.
 2. 3 consecutive failed attempts on one ticket.
-3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image), `rc=25` (image preflight — digest mismatch or runner missing; rebuild via `./setup.sh`).
+3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image).
    `rc=24` is escalated to the human IMMEDIATELY — it is not a ticket defect; do not burn 3 retries on it.
-   `rc=16`/`rc=25` are image defects, not ticket defects: do NOT retry the ticket — call the human to rebuild the image.
+   `rc=16` is an image defect, not a ticket defect: do NOT retry the ticket — call the human to rebuild the image. (Image provenance — digest/runner availability — is a `doctor.sh` check, not a launch code; run `./setup.sh` if doctor flags it.)
 4. Architectural dead end in `CONTEXT.md` / `specs/`.
 
 ## 5. Subagents and context hygiene
@@ -103,7 +126,8 @@ ONLY:
 ## 6. Forbidden
 
 - Writing/editing code in `stanok/src/`, `stanok/tests/`, `stanok/docs/` directly.
-- Deviating from the 3-call pattern in section 3 (launch foreground → ONE background wait task → Read summary.json): no combined `&&` one-liner, no foreground blocking wait, no extra status checks.
+- Deviating from the 2-call pattern in section 3 (ONE background `run --background --follow` → Read summary.json): no foreground blocking wait, no extra status checks, no separate hand-rolled wait loop.
+- Launching `run --background` without `--follow` (no completion notification is ever delivered — the SMOKE-02 failure; use `--follow`).
 - Calling `TaskCreate`, `TaskUpdate` or sending intermediate messages between the machine launch and the completion notification (this clogs the single server slot with parasitic 65k+ token requests and hangs the machine).
 - Launching the machine if the current supervisor session context exceeds 50k tokens (first ask the human for `/compact`).
 - Reading raw log files (`/tmp/claude-*`, `*.output`, `*.launch.log`) while the machine is running.
@@ -119,3 +143,15 @@ ONLY:
   output — and even then the Bash tool result text must be checked for sandbox errors.
 - Polling Opik via curl in a loop (repeated status queries). One-off fetches AFTER the
   run has completed are allowed; never poll Opik while the machine is running.
+  For trace diagnosis use `python3 /home/hermes/darkcast/opik-traces.py <session_id>...`
+  (CC-159: the Opik API ignores all query filters, so the helper paginates and
+  filters `metadata.thread_id` client-side).
+
+## 7. Primitive-first (cli.js first)
+
+Before adding any harness mechanism in `launcher/`, grep the pinned
+`~/git/claude-code-2.1.88/cli.js` + SDK `0.2.139`. If a native primitive exists,
+**configure it — do not reimplement it**. Every new mechanism in a ticket must cite
+either (a) an incident with `evidence/` proof, or (b) the native primitive it replaces.
+No citation → reject the mechanism. A mechanism is deleted once its incident class is
+closed natively (see `specs/REVIEW-KISS-CLI-FIRST-2026-09-24.md` §6).
