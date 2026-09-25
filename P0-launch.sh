@@ -21,7 +21,7 @@ set -o pipefail
 # STANOK_PROXY) still win. All other arguments pass through to claude.
 # ---------------------------------------------------------------------------
 HOST="127.0.0.1"
-TOK=128000
+TOK=123000
 ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -100,8 +100,8 @@ export CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS="1"
 export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
-# Context / compaction (n_ctx=128000, output reserve 24k)
-# Canon: 128000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
+# Context / compaction (server n_ctx=123136 since 2026-09-24 restart, output reserve 24k)
+# Canon: 123000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
 # ---------------------------------------------------------------------------
 export CLAUDE_CODE_AUTO_COMPACT_WINDOW="$TOK"
 export STANOK_REQUIRED_WINDOW="$TOK"
