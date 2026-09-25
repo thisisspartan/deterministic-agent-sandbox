@@ -17,21 +17,26 @@ The `STACKS` variable is the single stack extension point: exactly ONE line
 per stack, format
 
 ```
-<ext>|<test-glob>|<name-regex>|<test-runner>|<smoke-runner>
+<ext>|<test-glob>|<name-regex>|<test-runner>|<smoke-runner>|<preflight>
 ```
 
 - `test-glob` — `find(1) -name` glob for `list` (basename match);
 - `name-regex` — ERE for the basename; validates `test`/`smoke` args (charset);
 - `test-runner` — command line for `test` (timeout 60, stdin `</dev/null`);
-- `smoke-runner` — command line for `smoke` (timeout 10, stdin `</dev/null`).
+- `smoke-runner` — command line for `smoke` (timeout 10, stdin `</dev/null`);
+- `preflight` — cheap runner-availability probe (timeout 10, stdin
+  `</dev/null`); a non-zero exit is ENV-FAIL (rc=6) — the runner is missing
+  from the environment, NOT a red test.
 
 The test-runner, smoke-runner, find-glob and the usage text are all
 GENERATED from this registry — no other code change per stack. Current
-registry:
+registry (must stay byte-identical to the `STACKS` heredoc in
+`scripts/run.sh` — doctor `test_stacks_md_matches_registry`):
 
 ```
-js|*.test.js|[A-Za-z0-9_-]+\.test\.js|node --test --test-force-exit|node
-py|*_test.py|[A-Za-z0-9_-]+_test\.py|python3|python3
+js|*.test.js|[A-Za-z0-9_-]+\.test\.js|node --test --test-force-exit|node|node --version
+py|*_test.py|[A-Za-z0-9_-]+_test\.py|env PYTHONDONTWRITEBYTECODE=1 uv run --no-project python3 -m pytest -q -p no:cacheprovider -o pythonpath=src|env PYTHONDONTWRITEBYTECODE=1 uv run --no-project python3|env PYTHONDONTWRITEBYTECODE=1 uv run --no-project python3 -m pytest --version
+jq|*.json|[A-Za-z0-9_-]+\.json|jq empty|jq empty|command -v jq
 ```
 
 SEC-01 path validation (strict charset, file exists, no symlink in any path
