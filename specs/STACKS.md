@@ -30,8 +30,9 @@ per stack, format
 
 The test-runner, smoke-runner, find-glob and the usage text are all
 GENERATED from this registry — no other code change per stack. Current
-registry (must stay byte-identical to the `STACKS` heredoc in
-`scripts/run.sh` — doctor `test_stacks_md_matches_registry`):
+registry (must match the live `STACKS` block in
+`scripts/stacks.generated.sh`, generated from `scripts/stacks/*.toml` by
+`scripts/gen_stacks.sh` — doctor `test_stacks_md_matches_registry`):
 
 ```
 js|*.test.js|[A-Za-z0-9_-]+\.test\.js|node --test --test-force-exit|node|node --version
