@@ -1,0 +1,32 @@
+diff --git a/tools/server/server-common.cpp b/tools/server/server-common.cpp
+index ac291d359..f3a1e71e2 100644
+--- a/tools/server/server-common.cpp
++++ b/tools/server/server-common.cpp
+@@ -911,7 +911,26 @@ json oaicompat_chat_params_parse(
+     auto tools = json_value(body, "tools", json());
+     auto has_tools = tools.is_array() && !tools.empty();
+     auto stream = json_value(body, "stream", false);
+-    auto tool_choice = json_value(body, "tool_choice", std::string("auto"));
++    std::string tool_choice;
++    if (body.contains("tool_choice") && body.at("tool_choice").is_object()) {
++        // OpenAI object form: {"type":"function","function":{"name":"..."}}.
++        // The sampling layer here only knows AUTO/REQUIRED/NONE (no per-function
++        // forcing), so map the object to the nearest string:
++        //   "none" -> "none", "auto" -> "auto", otherwise ("function"/"any"/"tool")
++        //   -> "required" (force a tool call; the model picks which one).
++        const json & tc = body.at("tool_choice");
++        const std::string type = json_value(tc, "type", std::string("function"));
++        if (type == "none") {
++            tool_choice = "none";
++        } else if (type == "auto" || !has_tools) {
++            tool_choice = "auto";
++        } else {
++            tool_choice = "required";
++        }
++        LOG_INF("tool_choice object (type=\"%s\") mapped to \"%s\"\n", type.c_str(), tool_choice.c_str());
++    } else {
++        tool_choice = json_value(body, "tool_choice", std::string("auto"));
++    }
+ 
+     if (!opt.use_jinja) {
+         if (has_tools) {
