@@ -10,8 +10,13 @@ Executor: operator/supervisor (infra config: root `.claude/` + `stanok/.claude/`
   to the machine. Safe to put a personal supervisor hook there.
 - Hook input in 2.1.88 DOES carry `session_id` (schema: `session_id,
   transcript_path, cwd, permission_mode, agent_id, agent_type`).
-- `jq 1.7` present at `/usr/bin/jq`.
+- `python3` is available in BOTH environments (supervisor host and the
+  machine Docker image — py stack). No `jq` dependency: the hook is a single
+  python3 process (~20 ms spawn, sha256 itself is 0.47 µs — measured),
+  vs 6 process spawns in the bash draft.
 - PreToolUse `exit 2` = deny, stderr is fed to the model as the reason.
+- Hook latency budget: ~30–50 ms per Bash call → <1% overhead on a run;
+  zero LLM/KV impact (local process, no inference requests).
 - Root `.gitignore` does NOT currently ignore `/.claude/settings.local.json`
   (claim checked and refuted) — without the ignore line, `sync-skeleton`
   would push the personal hook into skeleton-pub.
@@ -26,35 +31,35 @@ Executor: operator/supervisor (infra config: root `.claude/` + `stanok/.claude/`
          {
            "matcher": "Bash",
            "hooks": [
-             { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/loop-guard.sh" }
+             { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/loop-guard.py" }
            ]
          }
        ]
      }
    }
    ```
-2. Create `/home/hermes/darkcast/.claude/hooks/loop-guard.sh` (bash, `set -euo pipefail`):
-   - Read hook JSON on stdin; extract `tool_input.command` and `session_id` via jq.
+2. Create `/home/hermes/darkcast/.claude/hooks/loop-guard.py` (python3,
+   `chmod +x`, shebang `#!/usr/bin/env python3`):
+   - Read hook JSON on stdin; extract `tool_input.command` and `session_id`
+     with the `json` module. **Fail-open: ANY exception (bad JSON, missing
+     keys, IO error) → `exit 0`** — the hook must never block or hang a turn.
    - Empty command → exit 0.
    - **NO whitelist — every Bash command is counted, no exceptions.**
      Rationale: a looping agent repeats the same commands right up to
      completion, so read-only commands in a loop must be caught too; the
      whitelist only created bypass surface.
-   - State file: `/tmp/claude-loop-guard/<session_id>.log` (mkdir -p).
-   - Hash = sha256 of the exact command string; append one hash line per call.
-   - **Count fix (bug in the original draft):** `grep -c` prints `0` AND exits 1
-     on zero matches, so `|| echo 0` produced `COUNT="0\n0"` → arithmetic error
-     → hook rc=1 noise on every first command. Use:
-     ```bash
-     COUNT=$(grep -c "^$HASH\$" "$STATE_FILE" 2>/dev/null || true)
-     COUNT=${COUNT:-0}
-     ```
+   - State file: `/tmp/claude-loop-guard/<session_id>.log` (makedirs).
+   - Hash = sha256 of the exact command string (0.47 µs — not a bottleneck;
+     the process spawn is ~44 000× more expensive, measured).
+   - Count = number of previous lines equal to the hash (file read, no grep
+     process).
    - **Threshold: block on the 10th literal repetition** — i.e. deny when
      `COUNT >= 9` (9 previous identical runs already seen). stderr message
      (Russian): «Эта команда уже выполнялась 10 раз в этой сессии без смены
      подхода. Не повторяй — действуй по уже полученному результату или явно
-     смени подход.» exit 2.
-   - Otherwise exit 0.
+     смени подход.» exit 2. On deny do NOT append (stays blocked on 11th,
+     12th…).
+   - Otherwise append the hash line and exit 0.
 3. Add to root `/home/hermes/darkcast/.gitignore`:
    ```
    /.claude/settings.local.json
@@ -62,34 +67,41 @@ Executor: operator/supervisor (infra config: root `.claude/` + `stanok/.claude/`
 
 Reference implementation (both copies, `chmod +x`):
 
-```bash
-#!/usr/bin/env bash
-# PreToolUse(Bash) loop guard. exit 2 = deny, stderr идёт модели как причина.
-set -euo pipefail
+```python
+#!/usr/bin/env python3
+"""PreToolUse(Bash) loop guard. exit 2 = deny, stderr идёт модели как причина.
+Fail-open: любой сбой = exit 0 (хук никогда не блокирует и не вешает turn)."""
+import sys, json, hashlib, os
 
-INPUT=$(cat)
-CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
-SID=$(printf '%s' "$INPUT" | jq -r '.session_id // "nosession"')
-[ -z "$CMD" ] && exit 0
+try:
+    d = json.load(sys.stdin)
+    cmd = (d.get("tool_input") or {}).get("command") or ""
+    sid = d.get("session_id") or "nosession"
+except Exception:
+    sys.exit(0)
+if not cmd:
+    sys.exit(0)
 
-STATE_DIR="/tmp/claude-loop-guard"
-STATE_FILE="$STATE_DIR/$SID.log"
-mkdir -p "$STATE_DIR"
-HASH=$(printf '%s' "$CMD" | sha256sum | cut -d' ' -f1)
-
-# grep -c при 0 совпадениях печатает "0" И возвращает 1,
-# поэтому "|| echo 0" дал бы COUNT="0\n0" → arithmetic error → rc=1 шум.
-COUNT=$(grep -c "^$HASH\$" "$STATE_FILE" 2>/dev/null || true)
-COUNT=${COUNT:-0}
+h = hashlib.sha256(cmd.encode()).hexdigest()
+p = f"/tmp/claude-loop-guard/{sid}.log"
+os.makedirs(os.path.dirname(p), exist_ok=True)
+try:
+    with open(p) as f:
+        n = sum(1 for line in f if line.strip() == h)
+except (FileNotFoundError, OSError):
+    n = 0
 
 # Порог 10: deny на 10-м буквальном повторе (9 предыдущих уже были).
-if [ "$COUNT" -ge 9 ]; then
-  echo "Эта команда уже выполнялась $((COUNT + 1)) раз в этой сессии без смены подхода. Не повторяй — действуй по уже полученному результату или явно смени подход." >&2
-  exit 2
-fi
+if n >= 9:
+    sys.stderr.write(
+        f"Эта команда уже выполнялась {n + 1} раз в этой сессии без смены "
+        "подхода. Не повторяй — действуй по уже полученному результату или "
+        "явно смени подход.\n")
+    sys.exit(2)
 
-echo "$HASH" >> "$STATE_FILE"
-exit 0
+with open(p, "a") as f:
+    f.write(h + "\n")
+sys.exit(0)
 ```
 
 ## Machine side (stanok/)
@@ -109,18 +121,17 @@ from `userSettings` / `projectSettings` / `localSettings` — **NOT from
          {
            "matcher": "Bash",
            "hooks": [
-             { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/loop-guard.sh" }
+             { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/loop-guard.py" }
            ]
          }
        ]
      }
    }
    ```
-5. Create `/home/hermes/darkcast/stanok/.claude/hooks/loop-guard.sh` — same
-   logic as the supervisor script (item 2): jq parse, NO whitelist (count
-   everything), sha256 count with the `|| true` / `${COUNT:-0}` fix, deny on
-   10th literal repetition (`COUNT >= 9`), state
-   `/tmp/claude-loop-guard/<session_id>.log`.
+5. Create `/home/hermes/darkcast/stanok/.claude/hooks/loop-guard.py` — same
+   logic as the supervisor script (item 2): json parse, fail-open, NO
+   whitelist (count everything), sha256 count, deny on 10th literal
+   repetition (`COUNT >= 9`), state `/tmp/claude-loop-guard/<session_id>.log`.
    (Deliberate copy, not a shared file: the container must be self-contained.)
 6. Tamper-safety (already in place, verify only): the machine cannot modify
    its own hook — `settings.stanok.json` denies `Edit(.claude/**)` and the
