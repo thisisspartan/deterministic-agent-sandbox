@@ -61,7 +61,7 @@ forgotten — the SMOKE-02 run launched `--background`, wrote "waiting", and
 ended its turn without the wait task, so nothing ever returned to the TUI):
 
 1. **Launch + wait (ONE Bash call with `run_in_background: true`):**
-   `/home/hermes/darkcast/stanok/launch.sh run /home/hermes/darkcast/tickets/TASK-STANOK-CC-NNN.md <label> --background --follow`
+   `/home/hermes/darkcast/stanok/launch.sh run /home/hermes/darkcast/tickets/TASK-STANOK-CC-NNN.md <label> --follow`
    The task returns only when the run is terminal; the child's `.running` marker
    confirms the launch (a failure prints rc=17 immediately, no waiting). The
    supervisor does NOTHING while it runs (no tools, no messages, no status
@@ -79,8 +79,9 @@ or to `tail`/`cat` logs while the machine is running.
 1. The wait is the SINGLE background Bash task from step 1 (`--follow` blocks
    inside it). Between the launch and the completion notification the supervisor
    sends NO messages and calls NO tools (no TaskCreate/TaskUpdate, no status
-   checks, no TaskOutput). NEVER launch `run --background` without `--follow`
-   — that is a launch with no notification, i.e. nothing ever returns to the TUI.
+   checks, no TaskOutput). `--follow` is the SOLE background flag (BL-1): a
+   background launch without it does not exist — a bare `run` is a foreground
+   sync run that exceeds the Bash tool's cap on a long run.
 2. On the notification: read `summary.json` exactly ONCE (step 2).
 3. `dead` or `missing` (no summary.json) → the run was aborted (process died
    without saving the report): read the last 30 diagnostic lines from
@@ -126,8 +127,8 @@ ONLY:
 ## 6. Forbidden
 
 - Writing/editing code in `stanok/src/`, `stanok/tests/`, `stanok/docs/` directly.
-- Deviating from the 2-call pattern in section 3 (ONE background `run --background --follow` → Read summary.json): no foreground blocking wait, no extra status checks, no separate hand-rolled wait loop.
-- Launching `run --background` without `--follow` (no completion notification is ever delivered — the SMOKE-02 failure; use `--follow`).
+- Deviating from the 2-call pattern in section 3 (ONE background `run --follow` → Read summary.json): no foreground blocking wait, no extra status checks, no separate hand-rolled wait loop.
+- Launching a background run without `--follow` (the sole background flag — no completion notification is ever delivered, the SMOKE-02 failure).
 - Calling `TaskCreate`, `TaskUpdate` or sending intermediate messages between the machine launch and the completion notification (this clogs the single server slot with parasitic 65k+ token requests and hangs the machine).
 - Launching the machine if the current supervisor session context exceeds 50k tokens (first ask the human for `/compact`).
 - Reading raw log files (`/tmp/claude-*`, `*.output`, `*.launch.log`) while the machine is running.
