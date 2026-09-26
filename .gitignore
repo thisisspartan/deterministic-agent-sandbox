@@ -1,3 +1,4 @@
 # machine run artifacts (usually live in /tmp/stanok-logs, outside the repo)
 .stanok-logs/
 *.launch.log
+/.claude/settings.local.json
