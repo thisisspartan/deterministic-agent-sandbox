@@ -60,6 +60,38 @@ Executor: operator/supervisor (infra config: root `.claude/` + `stanok/.claude/`
    /.claude/settings.local.json
    ```
 
+Reference implementation (both copies, `chmod +x`):
+
+```bash
+#!/usr/bin/env bash
+# PreToolUse(Bash) loop guard. exit 2 = deny, stderr идёт модели как причина.
+set -euo pipefail
+
+INPUT=$(cat)
+CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
+SID=$(printf '%s' "$INPUT" | jq -r '.session_id // "nosession"')
+[ -z "$CMD" ] && exit 0
+
+STATE_DIR="/tmp/claude-loop-guard"
+STATE_FILE="$STATE_DIR/$SID.log"
+mkdir -p "$STATE_DIR"
+HASH=$(printf '%s' "$CMD" | sha256sum | cut -d' ' -f1)
+
+# grep -c при 0 совпадениях печатает "0" И возвращает 1,
+# поэтому "|| echo 0" дал бы COUNT="0\n0" → arithmetic error → rc=1 шум.
+COUNT=$(grep -c "^$HASH\$" "$STATE_FILE" 2>/dev/null || true)
+COUNT=${COUNT:-0}
+
+# Порог 10: deny на 10-м буквальном повторе (9 предыдущих уже были).
+if [ "$COUNT" -ge 9 ]; then
+  echo "Эта команда уже выполнялась $((COUNT + 1)) раз в этой сессии без смены подхода. Не повторяй — действуй по уже полученному результату или явно смени подход." >&2
+  exit 2
+fi
+
+echo "$HASH" >> "$STATE_FILE"
+exit 0
+```
+
 ## Machine side (stanok/)
 
 Key fact (verified in cli.js 2.1.88, function `Mb4`): hooks are loaded ONLY
