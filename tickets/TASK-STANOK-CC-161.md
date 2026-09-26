@@ -1,6 +1,6 @@
-# TASK-STANOK-CC-161: Supervisor loop-guard hook (PreToolUse Bash, threshold 5)
+# TASK-STANOK-CC-161: Loop-guard hook for BOTH supervisor TUI and machine (PreToolUse Bash, threshold 5)
 
-Executor: operator/supervisor (supervisor-zone infra: root `.claude/` — NOT a machine ticket, no launch).
+Executor: operator/supervisor (infra config: root `.claude/` + `stanok/.claude/` — NOT a machine ticket, no launch).
 
 ## Background (verified 2026-09-25 against pinned cli.js 2.1.88)
 
@@ -61,6 +61,44 @@ Executor: operator/supervisor (supervisor-zone infra: root `.claude/` — NOT a 
    /.claude/settings.local.json
    ```
 
+## Machine side (stanok/)
+
+Key fact (verified in cli.js 2.1.88, function `Mb4`): hooks are loaded ONLY
+from `userSettings` / `projectSettings` / `localSettings` — **NOT from
+`flagSettings`**. Therefore the machine hook must NOT go into
+`settings.stanok.json` (loaded via `settings=`); it goes into
+`stanok/.claude/settings.json` (projectSettings, machine cwd=`stanok/`).
+
+4. Add a `hooks` section to `/home/hermes/darkcast/stanok/.claude/settings.json`
+   (currently `{}`):
+   ```json
+   {
+     "hooks": {
+       "PreToolUse": [
+         {
+           "matcher": "Bash",
+           "hooks": [
+             { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/loop-guard.sh" }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+5. Create `/home/hermes/darkcast/stanok/.claude/hooks/loop-guard.sh` — same
+   logic as the supervisor script (item 2): jq parse, read-only whitelist,
+   sha256 count with the `|| true` / `${COUNT:-0}` fix, deny on 5th literal
+   repetition (`COUNT >= 4`), state `/tmp/claude-loop-guard/<session_id>.log`.
+   (Deliberate copy, not a shared file: the container must be self-contained.)
+6. Tamper-safety (already in place, verify only): the machine cannot modify
+   its own hook — `settings.stanok.json` denies `Edit(.claude/**)` and the
+   sandbox `denyWrite`/`denyRead` covers `../.claude`; the hook process is
+   spawned by the CLI, outside the machine's sandboxed Bash.
+
+§7 citation: native PreToolUse hook primitive (no launcher mechanism added);
+incident class = command loops observed in the supervisor TUI 2026-09-25 and
+the SMOKE-02-class stuck-run risk on the machine.
+
 ## Acceptance criteria
 
 - First run of any Bash command: hook exits 0, no error text to the model.
@@ -70,7 +108,10 @@ Executor: operator/supervisor (supervisor-zone infra: root `.claude/` — NOT a 
   repetitions.
 - `git status --porcelain` in the root repo shows no `.claude/settings.local.json`
   (ignored); `sync-skeleton --diff` does not list it.
-- Machine session (cwd=`stanok/`) is unaffected — hook file is never loaded there.
+- Machine session: hook IS active — in a machine run, the 5th literal
+  repetition of a Bash command is denied with the stderr message (visible in
+  the Opik trace / run output); read-only commands never blocked.
+- `settings.stanok.json` is unchanged (hooks there would be silently ignored).
 
 ## Non-goals
 
