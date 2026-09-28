@@ -80,12 +80,13 @@ from any container vantage point.
 `denyRead` in `.claude/settings.stanok.json` (commit `d7ef8b7`); verified
 effective by the CC-173 in-sandbox probe + host-side check.
 
-## 6. Host experiments (I5 + lifecycle) — 2026-09-28, both CONFIRMED
+## 6. Host experiments (I5 + lifecycle) — 2026-09-28, both CONFIRMED, both since CLOSED
 
 Both host-side unknowns from §2 were closed empirically (host-side scripts,
 no machine launch; scripts kept at `/tmp/lifecycle_exp.py`, `/tmp/i5_exp.py`).
+Both findings were then fixed and are CLOSED (fix notes at the end of §6.1/§6.2).
 
-### 6.1 Child-process lifecycle (Reaper overclaim) — CONFIRMED
+### 6.1 Child-process lifecycle (Reaper overclaim) — CONFIRMED, CLOSED (comment fixed)
 Reproduced the `run_sandboxed` structure: parent ignores SIGTERM, spawns a
 stand-in docker client (`sleep 300`) with `start_new_session=True`
 (`stanok.py:1926`), then performs the Reaper's action `os.killpg(0, SIGTERM)`
@@ -106,7 +107,14 @@ new-session child is outside the launcher's process group and survives
 spawned in a new session) likewise escapes any host-side process-group kill —
 it lives until `docker stop`.
 
-### 6.2 I5 TOCTOU (verify_gate PASS → _publish_evidence) — CONFIRMED
+**Fix (IMPLEMENTED 2026-09-28):** the `stanok.py` module docstring (item 7,
+former `:15`) no longer overclaims — it now states that process cleanup is
+guaranteed at the container boundary via `docker stop -t 5`, and that client
+processes spawned with `start_new_session=True` are outside the host process
+group (the Reaper's `os.killpg(0)` does not reach them). Comment-only fix:
+the Reaper stays best-effort by design; the guarantee is `docker stop`.
+
+### 6.2 I5 TOCTOU (verify_gate PASS → _publish_evidence) — CONFIRMED, CLOSED (integrity check)
 Drove the REAL `stanok._publish_evidence` (`stanok.py:168-184`) against a temp
 tree (monkeypatched `LOG_DIR`/`REPO_ROOT`): wrote a legitimate PASS
 `summary.json`, then a background child (stand-in for a surviving container
@@ -123,6 +131,18 @@ VERDICT: I5 CONFIRMED.
 forged verdict propagated into host-owned `evidence/` with no error and no
 detection.
 
+**Fix (IMPLEMENTED 2026-09-28):** `_publish_evidence(label, container_rc)`
+now cross-checks the published verdict against the host's ground truth — the
+docker exit code, which equals the container-side launcher's exit code, which
+equals the real run rc. A `summary.json` that claims `verifier: "PASS"` after
+a non-zero container exit, or whose `rc` field disagrees with the container
+exit, is rewritten to `verifier: "FAIL"` + `integrity_violation` before it
+lands in `evidence/` (fail-closed; a host-side `KeyboardInterrupt` rc=130 over
+a legitimate container PASS is deliberately sacrificed to the same rule).
+Pinned by `launcher/tests_harness/test_verdict_safety.py` §8 (forged PASS,
+rc-field tamper, clean PASS/FAIL untouched) — full harness green
+(186 passed, 2 skipped).
+
 ### 6.3 Combined attack chain — link 1 since CLOSED by the I6 fix (§7)
 1. **I6** (§5, §7): the sandboxed model's view of `LOG_DIR` is a throwaway
    per-invocation tmpfs (cli.js `denyRead` → `--tmpfs`); writes never reach
@@ -132,21 +152,20 @@ detection.
    process-group kill — it outlives the turn and the Reaper, dying only at
    `docker stop`. (Still true, but no longer exploitable for verdict
    tampering: the child cannot reach the real `LOG_DIR`.)
-3. **I5** (§6.2): whatever is in `LOG_DIR/<label>` at publish time is copied
-   verbatim into `evidence/` — no integrity check. (Still true as a
-   defense-in-depth gap, but no longer reachable from the model.)
+3. **I5** (§6.2): the publish is now integrity-checked — a verdict claiming
+   PASS (or carrying an `rc` that disagrees with the container exit) after a
+   non-zero container exit is forced to FAIL before it lands in `evidence/`.
+   **CLOSED.**
 
-⇒ The chain was real as a code-reading fact; the I6 fix breaks it at link 1.
-I5 remains an open hardening item (integrity check at publish), not an
-exploitable gap from the model's side.
+⇒ The chain was real as a code-reading fact; the I6 fix breaks it at link 1,
+and the I5 integrity check closes the publish step. No exploitable gap
+remains from the model's side.
 
-**Fix directions (need a decision — NOT implemented):**
-- I5: make `_publish_evidence` integrity-checked — e.g. have verify_gate
-  write a signed/hashed verdict (host holds the key or recomputes the hash
-  from container-side state the model cannot write), or publish from a
-  path the container never has an rw view of.
-- Lifecycle: fix the `:15` comment (overclaim), or track the docker client's
-  session/pgid and kill that group explicitly in the Reaper.
+**Fix directions — ALL IMPLEMENTED (2026-09-28):**
+- I5: `_publish_evidence` is integrity-checked (rc cross-check, §6.2). A
+  signed/hashed verdict remains a possible future hardening, not a gap.
+- Lifecycle: the `:15` docstring no longer overclaims (§6.1); the Reaper
+  stays best-effort, the guarantee is `docker stop -t 5`.
 - I6: IMPLEMENTED (§7).
 
 ## 7. I6 fix + CC-173 verification (2026-09-28) — I6 CLOSED (positive)
