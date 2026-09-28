@@ -14,9 +14,10 @@ artifacts, keep all infrastructure. Work in whatever repo you are invoked in.
 ## 2. Identify what to clean — do NOT delete yet
 Collect the exact file list, grouped by category, with full paths:
 - **Code** (machine-generated): `src/*`, `tests/*`, `docs/*` — keep each dir's `.gitkeep`.
-- **Run artifacts**: `evidence/`, `.stanok-logs/`, `__pycache__/`, `.venv/`, `*.log`.
+- **Run artifacts**: `evidence/`, `__pycache__/`, `.venv/`, `*.log`.
+  (Run logs live OUTSIDE the repo in `/tmp/stanok-logs` — nothing to clean in-repo.)
 - **Project history** (optional, for a full reset): `tickets/TASK-*.md`, `specs/STATUS.md`
-  rows, `specs/AUDIT-*.md`, `specs/REDTEAM-*.md`, `specs/REVIEW-*.md`.
+  rows, `specs/AUDIT-*.md`, `specs/REDTEAM-*.md`, `specs/REVIEW-*.md`, `specs/VERIFY-*.md`.
 
 Use `git ls-files` (tracked) + `git status --porcelain` (untracked) to build the list.
 
@@ -52,6 +53,7 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 
 ## Never delete (infrastructure — always keep)
 `launcher/`, `hooks/`, `scripts/`, `launch.sh`, `setup.sh`,
-`requirements.txt`, `CONTEXT.md`, `CLAUDE.supervisor.md`, `P0-launch.sh`, `.gitmodules`,
+`requirements.txt`, `CONTEXT.md`, `CLAUDE.supervisor.md`, `CLAUDE.md`, `Dockerfile`,
+`README.md`, `opik-traces.py`, `patches/`, `P0-launch.sh`, `.gitmodules`,
 `.gitignore`, `.claude/`, `tickets/.gitkeep`, `specs/.gitkeep`,
 and every `.gitkeep` file.
