@@ -10,7 +10,7 @@ Arguments: `$ARGUMENTS` = `<ticket.md> <label>`. If either is missing, ask the u
 ## 1. Pre-flight
 - ROOT = `git rev-parse --show-toplevel` (do NOT hardcode a path).
 - `git -C "$ROOT/stanok" status --porcelain` — if dirty, commit first
-  (`git -C "$ROOT/stanok" add -A && git -C "$ROOT/stanok" commit --no-verify -m "chore: save state before e2e"`);
+  (`git -C "$ROOT/stanok" add -A && git -C "$ROOT/stanok" commit -m "chore: save state before e2e"` — the `chore:` prefix is a maintenance convention only, no git hook enforces it);
   enforcement lives in one place — launch.sh's dirty-tree gate (rc=22).
 
 ## 2. Run (ONE command — no polling, no log reads while the machine runs)
