@@ -68,8 +68,14 @@ for f in "${dst_files[@]}"; do
 done
 
 # --- classify top-level changes ---
-top_sync=(P0-launch.sh .gitmodules .gitignore CLAUDE.supervisor.md .claude/e2e.sh .claude/sync-skeleton.sh)
-top_add=(); top_mod=()
+top_sync=(P0-launch.sh .gitmodules .gitignore CLAUDE.supervisor.md)
+mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
+top_sync+=("${claude_files[@]}")
+top_add=(); top_mod=(); top_rem=()
+mapfile -t dst_claude < <(git -C "$DST" ls-files .claude)
+for f in "${dst_claude[@]}"; do
+  git -C "$SRC" ls-files --error-unmatch "$f" >/dev/null 2>&1 || top_rem+=("$f")
+done
 for f in "${top_sync[@]}"; do
   [[ -f "$SRC/$f" ]] || continue
   if [[ ! -f "$DST/$f" ]] || ! git -C "$DST" ls-files --error-unmatch "$f" >/dev/null 2>&1; then
@@ -97,8 +103,10 @@ if [[ "$MODE" == "diff" ]]; then
   if (( ${#top_add[@]} )); then printf '  %s\n' "${top_add[@]}"; fi
   echo "MODIFY (${#top_mod[@]}):"
   if (( ${#top_mod[@]} )); then printf '  %s\n' "${top_mod[@]}"; fi
+  echo "REMOVE (${#top_rem[@]}):"
+  if (( ${#top_rem[@]} )); then printf '  %s\n' "${top_rem[@]}"; fi
   echo ""
-  total=$(( ${#sub_add[@]} + ${#sub_mod[@]} + ${#sub_rem[@]} + ${#top_add[@]} + ${#top_mod[@]} ))
+  total=$(( ${#sub_add[@]} + ${#sub_mod[@]} + ${#sub_rem[@]} + ${#top_add[@]} + ${#top_mod[@]} + ${#top_rem[@]} ))
   echo "TOTAL changes: $total"
   exit 0
 fi
@@ -135,6 +143,9 @@ for f in "${top_sync[@]}"; do
 done
 for f in tickets/TASK-*.md specs/AUDIT-*.md specs/REDTEAM-*.md specs/REVIEW-*.md; do
   [[ -e "$f" ]] && git rm -q -- "$f"
+done
+for f in "${top_rem[@]}"; do
+  git rm -q -- "$f"
 done
 
 # --- [3/4] commit (only if changed) ---
