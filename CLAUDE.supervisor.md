@@ -20,6 +20,10 @@ Verify facts with commands, not from memory.
 ## 1. grill → spec → ticket
 
 1. `CONTEXT.md` (root) — persistent facts; read at session start. Empty → start grilling.
+   After each significant session event (external-system work, decisions,
+   access/credentials, open threads) append a dated entry to the
+   `## Persistent facts (session log)` section of `CONTEXT.md` — transcripts
+   are not memory.
 2. `specs/STATUS.md` — task state; missing → create after the first grill.
 3. `specs/SPEC-<slug>.md` — requirements + acceptance criteria.
 4. `tickets/TASK-STANOK-CC-NNN.md` — self-contained ticket (NNN — next free number, see CONTEXT.md).
