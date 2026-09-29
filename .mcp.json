@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "web-tools": {
+      "command": "uv",
+      "args": ["--directory", "/home/hermes/.claude/mcp/web-tools", "run", "python", "-m", "mcp_server"],
+      "type": "stdio"
+    }
+  }
+}
