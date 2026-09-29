@@ -21,7 +21,15 @@ set -o pipefail
 # STANOK_PROXY) still win. All other arguments pass through to claude.
 # ---------------------------------------------------------------------------
 HOST="127.0.0.1"
-TOK=123000
+# Token limits — single source of truth: stanok/.claude/settings.stanok.json
+# (env block). `--tok` below still overrides the compact window.
+STANOK_SETTINGS="$(cd "$(dirname "$0")" && pwd)/stanok/.claude/settings.stanok.json"
+[[ -r "$STANOK_SETTINGS" ]] || { printf 'ERROR: %s not found\n' "$STANOK_SETTINGS" >&2; exit 1; }
+read -r TOK FILE_READ_OUT MCP_OUT MAX_OUT < <(
+    python3 -c 'import json,sys; e=json.load(open(sys.argv[1]))["env"]; print(e["CLAUDE_CODE_AUTO_COMPACT_WINDOW"], e["CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS"], e["MAX_MCP_OUTPUT_TOKENS"], e["CLAUDE_CODE_MAX_OUTPUT_TOKENS"])' \
+        "$STANOK_SETTINGS"
+)
+[[ -n "$TOK$FILE_READ_OUT$MCP_OUT$MAX_OUT" ]] || { printf 'ERROR: token limits unreadable from %s\n' "$STANOK_SETTINGS" >&2; exit 1; }
 ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -101,15 +109,15 @@ export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
 # Context / compaction (server n_ctx=123136 since 2026-09-24 restart, output reserve 24k)
-# Canon: 123000/12000/20000 — keep in sync with stanok/.claude/settings.stanok.json
+# Token limits come from $STANOK_SETTINGS (read at the top of this script).
 # ---------------------------------------------------------------------------
 export CLAUDE_CODE_AUTO_COMPACT_WINDOW="$TOK"
 export STANOK_REQUIRED_WINDOW="$TOK"
 export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="95"
-export CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS="16000"
-export MAX_MCP_OUTPUT_TOKENS="12000"
+export CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS="$FILE_READ_OUT"
+export MAX_MCP_OUTPUT_TOKENS="$MCP_OUT"
 export API_TIMEOUT_MS="600000"
-export CLAUDE_CODE_MAX_OUTPUT_TOKENS="20000"
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS="$MAX_OUT"
 export CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS="1"
 export CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1
 # ---------------------------------------------------------------------------
