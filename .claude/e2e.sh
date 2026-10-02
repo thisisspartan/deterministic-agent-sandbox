@@ -13,12 +13,14 @@ LABEL="${2:?usage: ./.claude/e2e.sh <ticket.md> <label>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Gate 1: launch + blocking wait (single combined command, no polling).
+# Gate 1: launch + blocking wait. `--follow` is the sole background flag
+# (CC-140/BL-1): it detaches the run and blocks in cmd_wait until the run is
+# terminal, returning 0 for ANY terminal state (done/dead/missing — including
+# a completed-but-failed run), 17 on a launch failure, 124 on the 45-min cap.
 # The chain result is checked explicitly (no set -e): a launch failure must
-# not fall through to Gate 2 with a misleading "no summary.json".
-if ! { ./stanok/launch.sh run "$TICKET" "$LABEL" --background \
-    && while ./stanok/launch.sh status "$LABEL" | grep -q '"state": "running"'; do sleep 15; done \
-    && ./stanok/launch.sh status "$LABEL"; }; then
+# not fall through to Gate 2 with a misleading "no summary.json". A
+# completed-but-failed run returns 0 here and is judged in Gate 2.
+if ! ./stanok/launch.sh run "$TICKET" "$LABEL" --follow; then
     echo "E2E-FAIL: gate 1 (launch + wait) failed" >&2
     exit 1
 fi
