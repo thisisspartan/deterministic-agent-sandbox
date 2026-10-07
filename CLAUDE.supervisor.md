@@ -112,6 +112,12 @@ or to `tail`/`cat` logs while the machine is running.
   The launcher already performed local retries inside the session with an adaptive `<contract_lock>`.
   The defect cause — from the `failures` or `errors` field in `summary.json`.
   Refine the ticket requirements (edge cases/specification) and relaunch: `<label>-retry1`.
+- **B2. LOOP-TRAP** (`probe_result: "LOOP-TRAP"`, CC-207): the circuit breaker
+  ended the run mid-turn — the machine repeated one identical tool call 5x in a
+  row (`loop_trap` field in `summary.json` carries tool/hash/n). Defect class B:
+  the loop was designed by the ticket, not by the code — refine the ticket
+  requirements, do NOT relaunch the same ticket unchanged; the refined ticket is
+  relaunched as `<label>-retry1` and counts toward the 3-attempt limit.
 
 ## 4. Stop conditions (call a human)
 
