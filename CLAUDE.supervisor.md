@@ -51,7 +51,10 @@ Procedure before every launch:
 3. **Manifest pre-check (CC-160, mirrors CC-133):** every `impl:`/`test:`/`docs:`
    path in the ticket must NOT yet exist under `stanok/`, and every `edit:`
    path MUST exist — verify with `ls` before burning a launch (a violation
-   aborts as rc=13 only after the gate runs).
+   aborts as rc=13 only after the gate runs). CC-206: an `edit:` path from
+   `_protected_files()` (pre-existing `tests/**` or `scripts/run.sh`) → reject
+   the ticket before launch; editing an existing test is an operator host-side
+   action.
 4. Launch ONLY when `stanok/` status is clean. Do not spawn subagents for git checks.
 
 ## 3. Pipeline: launch → validate → next ticket
