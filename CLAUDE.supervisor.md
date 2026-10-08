@@ -57,6 +57,26 @@ Procedure before every launch:
    action.
 4. Launch ONLY when `stanok/` status is clean. Do not spawn subagents for git checks.
 
+### Worktree smoke runs (D1/D2, plan 2026-10-08)
+
+D1: git worktrees are for SMOKE/negative runs only — working tickets run in the
+main `stanok/` checkout. Placement: `darkcast/stanok-<label>` (next to
+`stanok/`, inside the project root — ticket resolution and the role-leak gate
+work there via `dirname(repo_root)`, same as the main checkout). Branch
+`smoke/<label>`. The run lock is shared: its key is the git common dir
+(`cli._lock_key`, exported as `STANOK_LOCK_KEY`), so a worktree run and a main
+checkout run serialize (second gets rc=21). A fresh worktree needs
+`mkdir -p <worktree>/evidence` (the sandbox deny entry `../evidence` resolves
+against it — missing dir = rc=28; the dir is gitignored, the tree stays
+clean). The worktree has no `.venv`
+(`.venv/` ignores directories only — a symlink dirties the tree, rc=22):
+launch it with `STANOK_PY=/home/hermes/darkcast/stanok/.venv/bin/python`.
+After the run: capture the
+summary.json fields FIRST (evidence/ lives in the worktree), then
+`git -C /home/hermes/darkcast/stanok worktree remove --force <path>` (the
+machine's untracked src/tests artifacts + evidence/ are disposable by design)
++ delete the branch + record the result in CONTEXT.md.
+
 ## 3. Pipeline: launch → validate → next ticket
 
 Two calls, in order, with ABSOLUTE paths (CC-158 — the supervisor cwd may
