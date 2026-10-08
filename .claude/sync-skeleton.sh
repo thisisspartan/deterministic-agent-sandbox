@@ -7,7 +7,11 @@
 #
 # Syncs infrastructure only. Machine-generated code (stanok/src|tests|docs) and
 # project history (tickets, review/audit docs, evidence) are NEVER copied.
-# Clean templates (CONTEXT.md, README.md, specs/STATUS.md, tickets/.gitkeep) are kept.
+# specs/STACKS.md IS synced: it documents the stack manifests (infra) and must
+# match the live registry — the CC-147 doctor test runs green in the public clone.
+# Supervisor-zone files (CONTEXT.md, specs/STATUS.md) are NEVER copied — they are
+# project history, not infrastructure; the public clone has none, and the
+# test_context_md_budget doctor test skips when CONTEXT.md is absent.
 #
 # Usage:
 #   ./sync-skeleton.sh --diff          # preview: show what would change, no changes made
@@ -71,7 +75,7 @@ done
 # .gitmodules is NOT synced: the submodule URL is repo-specific (darkcast ->
 # LAN Gitea, skeleton-pub -> GitHub); mirroring it breaks the submodule link
 # on the other side (incident 2026-10-08: GitHub showed "stanok ???").
-top_sync=(P0-launch.sh .gitignore CLAUDE.supervisor.md)
+top_sync=(P0-launch.sh .gitignore CLAUDE.supervisor.md specs/STACKS.md)
 mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
 top_sync+=("${claude_files[@]}")
 top_add=(); top_mod=(); top_rem=()
