@@ -2,9 +2,11 @@
 
 Статус: принята оператором (пункты 1–5 + дополнения 2026-10-09: contract→FAIL, ban на
 симлинки, `docker cp` обязателен для A и B, red-фаза = cc215). Диагностика (a)/(b)/(c)
-выполнена до реализации. Реализация — тикет TASK-STANOK-CC-217 (машина, red-тесты первыми; условия оператора 1–7
-включены в тикет; `launcher/` декларируется через edit:/impl: — declared_carveout это
-разрешает). Приёмка после CC-217: повторный прогон `tickets/TASK-STANOK-CC-215.md`
+выполнена до реализации. Реализация — ОПЕРАТОР host-side в `launcher/` (решение оператора
+2026-10-09 после прогона cc217-impl: `edit: launcher` физически невыполним для машины —
+`Edit(launcher/**)` denied в settings.stanok.json, репозиторий `:ro`, зоны записи только
+src/tests/docs/scripts; declared_carveout декларирует путь, но не даёт запись).
+Тикет TASK-STANOK-CC-217 (машинная реализация) СНЯТ. Приёмка после реализации: повторный прогон `tickets/TASK-STANOK-CC-215.md`
 (ожидание CONTRACT-FAIL) + повторный прогон тикетов CC-210/CC-211 (ожидание PASS —
 regression happy-path и retry-путь).
 

@@ -1,5 +1,10 @@
 # TASK-STANOK-CC-217 — verdict integrity: fresh-check authority, contract→FAIL, symlink ban
 
+> WITHDRAWN (2026-10-09): `edit: launcher` физически невыполним для машины (Edit denied в
+> settings.stanok.json, репозиторий :ro, зоны записи src/tests/docs/scripts). Прогон
+> cc217-impl остановлен (dead, summary нет). Реализацию выполняет оператор host-side;
+> требования 1–7 этого тикета — спецификация операторской реализации. Не запускать.
+
 edit: launcher
 impl: launcher/tests_harness/test_verdict_fresh.py
 impl: launcher/tests_harness/test_fresh_lifecycle.py
