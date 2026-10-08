@@ -35,6 +35,22 @@ done
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
+# Commit message template (one source, used for BOTH commits): the message
+# carries the file count and the changed paths, not just a date — a bare
+# "chore: sync infra (date)" makes the public git log unreadable.
+# $1 = repo to describe (staged changes must already be added).
+sync_commit_msg() {
+  local repo="$1" n extra
+  local -a files shown
+  mapfile -t files < <(git -C "$repo" diff --cached --name-only)
+  n=${#files[@]}
+  shown=("${files[@]:0:20}")
+  extra=""
+  (( n > 20 )) && extra=" (+$((n - 20)) more)"
+  printf 'chore: sync infra from %s (%s): %d files: %s%s\n' \
+    "$(basename "$SRC")" "$(date +%F)" "$n" "${shown[*]}" "$extra"
+}
+
 # --- sanity (fail-closed) ---
 [[ -d "$SRC/.git" ]]        || die "SRC is not a git repo: $SRC"
 [[ -d "$DST/.git" ]]        || die "DST is not a git repo: $DST"
@@ -164,7 +180,7 @@ echo "[3/4] commit"
 cd "$DST_STANOK"
 git add -A
 if [[ -n "$(git status --porcelain)" ]]; then
-  git commit -q -m "chore: sync infra from $(basename "$SRC") ($(date +%F))"
+  git commit -q -m "$(sync_commit_msg "$DST_STANOK")"
   echo "  submodule committed"
 else
   echo "  submodule: no changes"
@@ -172,7 +188,7 @@ fi
 cd "$DST"
 git add -A
 if [[ -n "$(git status --porcelain)" ]]; then
-  git commit -q -m "chore: sync infra from $(basename "$SRC") ($(date +%F))"
+  git commit -q -m "$(sync_commit_msg "$DST")"
   echo "  top-level committed"
 else
   echo "  top-level: no changes"
