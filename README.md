@@ -19,9 +19,10 @@ tickets/                — machine tickets (TASK-STANOK-CC-NNN.md); the
                           machine sees ONLY the ticket
 P0-launch.sh            — interactive Claude Code -> local llama-server
                           session entry point (env-configurable, no repo paths)
-opik-traces.py          — Opik trace-diagnosis helper (client-side filter,
-                          CC-159)
-patches/                — llama-server patches (see patches/PATCHES.md)
+opik-traces.py          — (darkcast-specific) Opik trace-diagnosis helper
+                          (client-side filter, CC-159)
+patches/                — (darkcast-specific) llama-server patches (see
+                          patches/PATCHES.md)
 stanok/                 — the machine (git submodule)
 ```
 
