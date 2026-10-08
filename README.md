@@ -12,11 +12,14 @@ CLAUDE.supervisor.md    — the supervisor role (grill -> spec -> ticket ->
                           CLAUDE.md: a root CLAUDE.md would be auto-loaded
                           into the machine session (role leak, rc=24).
                           Injected explicitly via --append-system-prompt-file.
-CONTEXT.md              — persistent facts (read at session start)
+CONTEXT.md              — (darkcast-specific) persistent facts (read at
+                          session start)
 specs/                  — STATUS.md (task state) + SPEC-*.md (requirements
-                          + acceptance criteria)
-tickets/                — machine tickets (TASK-STANOK-CC-NNN.md); the
-                          machine sees ONLY the ticket
+                          + acceptance criteria) — darkcast-specific except
+                          specs/STACKS.md (the shared stack docs)
+tickets/                — (darkcast-specific) machine tickets
+                          (TASK-STANOK-CC-NNN.md); the machine sees ONLY
+                          the ticket
 P0-launch.sh            — interactive Claude Code -> local llama-server
                           session entry point (env-configurable, no repo paths)
 opik-traces.py          — (darkcast-specific) Opik trace-diagnosis helper
