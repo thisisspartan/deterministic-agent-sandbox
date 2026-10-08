@@ -68,7 +68,10 @@ for f in "${dst_files[@]}"; do
 done
 
 # --- classify top-level changes ---
-top_sync=(P0-launch.sh .gitmodules .gitignore CLAUDE.supervisor.md)
+# .gitmodules is NOT synced: the submodule URL is repo-specific (darkcast ->
+# LAN Gitea, skeleton-pub -> GitHub); mirroring it breaks the submodule link
+# on the other side (incident 2026-10-08: GitHub showed "stanok ???").
+top_sync=(P0-launch.sh .gitignore CLAUDE.supervisor.md)
 mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
 top_sync+=("${claude_files[@]}")
 top_add=(); top_mod=(); top_rem=()
