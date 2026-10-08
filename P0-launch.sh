@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Interactive Claude Code -> local llama-server (Qwen3.8-27B-MTP).
+# Interactive Claude Code -> local inference server (Strata, qwen3.8-flash-next-iq3_xxs).
 # Entry point to an interactive session (grill/coordination) from inside the skeleton.
 #
 # Portability: NO repo paths. External tools/constants are
 # overridden by env (defaults for this machine):
-#   STANOK_SERVER_URL  — llama-server address (default http://<host>:8080)
-#   STANOK_MODEL       — model name (default Qwen3.8-27B-MTP)
+#   STANOK_SERVER_URL  — inference server address (default http://<host>:8080)
+#   STANOK_MODEL       — model name (default qwen3.8-flash-next-iq3_xxs)
 #   STANOK_PROXY       — proxy for web tooling (default http://<host>:8118)
 #   CLAUDE_BIN         — claude binary (default $HOME/.npm-global/bin/claude)
 #   SEARCH_ENV_FILE    — optional .env with web-MCP keys (default: none)
@@ -53,7 +53,7 @@ set -- "${ARGS[@]}"
 # External constants (overridable via env)
 # ---------------------------------------------------------------------------
 SERVER_URL="${STANOK_SERVER_URL:-http://$HOST:8080}"
-MODEL="${STANOK_MODEL:-Qwen3.8-27B-MTP}"
+MODEL="${STANOK_MODEL:-qwen3.8-flash-next-iq3_xxs}"
 PROXY="${STANOK_PROXY:-http://$HOST:8118}"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.npm-global/bin/claude}"
 SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-}"
@@ -108,7 +108,7 @@ export CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS="1"
 export CLAUDE_CODE_DISABLE_AUTO_MEMORY="1"
 
 # ---------------------------------------------------------------------------
-# Context / compaction (server n_ctx=123136 since 2026-09-24 restart, output reserve 24k)
+# Context / compaction (Strata backend since 2026-10-08: max-context 131072; window 131000)
 # Token limits come from $STANOK_SETTINGS (read at the top of this script).
 # ---------------------------------------------------------------------------
 export CLAUDE_CODE_AUTO_COMPACT_WINDOW="$TOK"
@@ -151,7 +151,7 @@ if [[ -r "$SEARCH_ENV_FILE" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Pre-flight: verify the local llama-server endpoint
+# Pre-flight: verify the local inference server endpoint
 # ---------------------------------------------------------------------------
 MODEL_NAME="?"
 SERVER_CTX="?"
@@ -161,9 +161,9 @@ if [[ -n "${STANOK_SKIP_SERVER_CHECK:-}" ]]; then
 else
     PROPS="$(curl -s --noproxy '*' --max-time 5 "$SERVER_URL/props" 2>/dev/null || true)"
     if [[ -z "$PROPS" ]]; then
-        printf '\033[31mERROR: local llama-server is unavailable @ %s\033[0m\n' \
+        printf '\033[31mERROR: local inference server is unavailable @ %s\033[0m\n' \
             "$SERVER_URL" >&2
-        printf '\033[33mStart llama-server first, or set STANOK_SKIP_SERVER_CHECK=1.\033[0m\n' \
+        printf '\033[33mStart the inference server first, or set STANOK_SKIP_SERVER_CHECK=1.\033[0m\n' \
             >&2
         exit 1
     fi
