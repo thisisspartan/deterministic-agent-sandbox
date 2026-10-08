@@ -129,8 +129,11 @@ Red-фаза уже получена живым прогоном cc215-diag; о�
   падающем тесте) обязан дать FAIL: symlink-скан (§5) → CONTRACT-FAIL, post-turn
   `check_test_config` → TEST-CONFIG-FAIL — несмотря на worker-PASS.
 - **R1b (regression, повторные прогоны тикетов CC-210 и CC-211):** обязаны остаться
-  PASS (CLEAN-FIRST / PASS-AFTER-LOCAL-RETRY) — fresh-проверка не должна ломать успешные
-  happy-path и retry-пути.
+  PASS с ТЕМИ ЖЕ probe_result: CC-210 → `CLEAN-FIRST`, CC-211 → `PASS-AFTER-LOCAL-RETRY`
+  (точная проверка probe_result, не только PASS: регресс, при котором вердикт формально PASS,
+  но путь изменился, должен быть виден). Fresh-проверка не должна ломать успешные happy-path
+  и retry-пути. NO-OP-PASS не ожидается: quarantine (ticket.py:237-261) переносит объявленные
+  пути (кроме edit:) в `live_dir/pre-existing` до сессии — машина стартует с нуля.
 - **R2 (таблица):** `test_verdict_fresh.py` — CONTRACT-FAIL overriding всё, включая
   NO-OP-PASS; FRESH-FAIL overriding CLEAN-FIRST, PASS-AFTER-LOCAL-RETRY, NO-OP-PASS
   (NO-OP-утверждение ложно, если fresh-check FAIL); `worker_rc`/`worker_verifier` сохранены.
