@@ -138,6 +138,18 @@ or to `tail`/`cat` logs while the machine is running.
   the loop was designed by the ticket, not by the code — refine the ticket
   requirements, do NOT relaunch the same ticket unchanged; the refined ticket is
   relaunched as `<label>-retry1` and counts toward the 3-attempt limit.
+- **B3. CONTRACT-FAIL** (`probe_result: "CONTRACT-FAIL"`, operator review
+  2026-10-09): the machine modified a protected file (`tests/`,
+  `scripts/run.sh`) or created a symlink in a writable zone — the verdict was
+  computed against a tampered tree; the suite never ran on it. No local retry
+  can help (violations are cumulative). FIRST clean the leftovers: the
+  machine's new files/links persist in the working tree (quarantine moves
+  only DECLARED paths), so `git -C <worktree> status --porcelain`, remove
+  what the machine created (a leftover zone symlink would make the NEXT
+  launch refuse with rc=13 — that is a leftover, not a ticket defect),
+  commit the clean state. Only then: defect class B — refine the ticket
+  requirements (the ticket pushed the machine to touch protected files) and
+  relaunch as `<label>-retry1`; counts toward the 3-attempt limit.
 
 ## 4. Stop conditions (call a human)
 
