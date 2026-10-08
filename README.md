@@ -43,4 +43,5 @@ stanok/                 — the machine (git submodule)
    (rc=0 + verifier PASS + no contract_lock_violations = DONE).
 
 Full pipeline discipline: `CLAUDE.supervisor.md` §3. Machine internals
-(setup, running, architecture, env table): `stanok/README.md`.
+(setup, running, env table): `stanok/README.md`; architecture (call chain,
+module map): `stanok/ARCHITECTURE.md`.
