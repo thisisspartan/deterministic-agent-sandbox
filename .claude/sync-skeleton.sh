@@ -75,7 +75,11 @@ done
 # .gitmodules is NOT synced: the submodule URL is repo-specific (darkcast ->
 # LAN Gitea, skeleton-pub -> GitHub); mirroring it breaks the submodule link
 # on the other side (incident 2026-10-08: GitHub showed "stanok ???").
-top_sync=(P0-launch.sh .gitignore CLAUDE.supervisor.md specs/STACKS.md)
+# README.md IS synced (2026-10-08 review): the public top-level README was a
+# stale pre-split relic (399 lines, --background/PreToolUse-deny) that no sync
+# ever updated. The darkcast root README is the control-room template; its
+# darkcast-only entries are marked as such inline.
+top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md specs/STACKS.md)
 mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
 top_sync+=("${claude_files[@]}")
 top_add=(); top_mod=(); top_rem=()
