@@ -16,8 +16,9 @@ Arguments: `$ARGUMENTS` = `<ticket.md> <label>`. If either is missing, ask the u
 ## 2. Run (ONE command — no polling, no log reads while the machine runs)
 From ROOT, run with the Bash tool (`run_in_background: true`):
     ./.claude/e2e.sh <ticket.md> <label>
-It launches the machine (`--background`), blocks in a `while ... status ... running` loop,
-and prints the final verdict. Wait for the completion notification.
+It launches the machine with `--follow` (the SOLE background flag, CC-140/BL-1) and
+blocks inside the same call until the run is terminal, then prints the final verdict.
+Wait for the completion notification.
 Do NOT poll `launch.sh status`, do NOT read `.launch.log` / evidence files while it runs.
 
 ## 3. Read the result ONCE
@@ -30,7 +31,7 @@ or
 - **E2E-OK** → report OK (rc, verifier, probe).
 - **E2E-FAIL** → report rc/verifier + the errors/failures lines. If more detail is needed,
   read `stanok/evidence/<label>/summary.json` exactly ONCE.
-- If e2e.sh was interrupted but the machine still runs
-  (`./stanok/launch.sh status <label>` → `"state": "running"`), re-attach with the blocking wait:
-      while ./stanok/launch.sh status <label> | grep -q '"state": "running"'; do sleep 15; done && ./stanok/launch.sh status <label>
-  then read summary.json once.
+- If e2e.sh was interrupted but the machine still runs, re-attach with the native
+  blocking wait — the same primitive `--follow` uses (CC-140), not a hand-rolled poll loop:
+      ./stanok/launch.sh wait <label>
+  (0 on any terminal state, 124 at the 45-min cap), then read summary.json once.
