@@ -141,24 +141,37 @@ or to `tail`/`cat` logs while the machine is running.
 - **B3. CONTRACT-FAIL** (`probe_result: "CONTRACT-FAIL"`, operator review
   2026-10-09): the machine modified a protected file (`tests/`,
   `scripts/run.sh`) or created a symlink in a writable zone — the verdict was
-  computed against a tampered tree; the suite never ran on it. No local retry
-  can help (violations are cumulative). FIRST clean the leftovers: the
-  machine's new files/links persist in the working tree (quarantine moves
-  only DECLARED paths), so `git -C <worktree> status --porcelain`, remove
-  what the machine created (a leftover zone symlink would make the NEXT
-  launch refuse with rc=13 — that is a leftover, not a ticket defect),
-  commit the clean state. Only then: defect class B — refine the ticket
-  requirements (the ticket pushed the machine to touch protected files) and
-  relaunch as `<label>-retry1`; counts toward the 3-attempt limit.
+  computed against a tampered tree; the suite never ran on it. Since Stage 3
+  (T3-2/T3-6) CONTRACT-FAIL may also be HOST-ISSUED: the host recomputes the
+  protected-files manifest against its pre-run snapshot and forces the verdict
+  regardless of the worker's summary — `worker_rc`/`worker_verifier` show what
+  the worker claimed. No local retry can help (violations are cumulative).
+  FIRST clean the leftovers: the machine's new files/links persist in the
+  working tree (quarantine moves only DECLARED paths), so
+  `git -C <worktree> status --porcelain`, remove what the machine created (a
+  leftover zone symlink would make the NEXT launch refuse with rc=13 — that is
+  a leftover, not a ticket defect), commit the clean state. Only then: defect
+  class B — refine the ticket requirements (the ticket pushed the machine to
+  touch protected files) and relaunch as `<label>-retry1`; counts toward the
+  3-attempt limit.
+- **B4. FRESH-FAIL** (`probe_result: "FRESH-FAIL"`, SPEC-VERDICT-INTEGRITY
+  §4): the worker claimed PASS; the host's independent fresh check (a new
+  container the worker never touched) refuted it — `rc` is the fresh check's
+  exit, `worker_rc`/`worker_verifier` carry the worker's claim, the failure
+  tail is in `errors`. DEFECT with cause "verdict-substitution suspected":
+  the tests passed only in the worker's own contaminated environment — refine
+  the ticket requirements, do NOT relaunch the same ticket unchanged; relaunch
+  refined as `<label>-retry1` (counts toward the 3-attempt limit). A second
+  FRESH-FAIL on the same ticket → stop condition (call the human).
 
 ## 4. Stop conditions (call a human)
 
 ONLY:
 1. All tickets done → final report to the human.
 2. 3 consecutive failed attempts on one ticket.
-3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image).
+3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image, or a host-side artifact failure: `docker cp` could not retrieve the summary, or the fresh check could not run — the `errors` field names which).
    `rc=24` is escalated to the human IMMEDIATELY — it is not a ticket defect; do not burn 3 retries on it.
-   `rc=16` is an image defect, not a ticket defect: do NOT retry the ticket — call the human to rebuild the image. (Image provenance — digest/runner availability — is a `doctor.sh` check, not a launch code; run `./setup.sh` if doctor flags it.)
+   `rc=16` is an infrastructure defect, not a ticket defect: do NOT retry the ticket — call the human (rebuild the image, or investigate the cp/fresh-check failure). (Image provenance — digest/runner availability — is a `doctor.sh` check, not a launch code; run `./setup.sh` if doctor flags it.)
 4. Architectural dead end in `CONTEXT.md` / `specs/`.
 
 ## 5. Subagents and context hygiene
