@@ -207,3 +207,37 @@ Host-оркестратор парсит маркеры из потока `kubec
   fresh-Pod без сети.
 - [ ] Манифесты проходят `kubectl apply` на vanilla-кластере (k3s без хаков).
 - [ ] Харнесс launcher (host-side) зелёный; protected-хэши согласованы с удалением Echelon 1.
+
+## 13. Регламент запуска netpol-smoke (CC-232, оператор согласовал 2026-10-11)
+
+`infra/netpol-smoke.sh` — живой кластерный прогон сетевой политики (probe-Pod'ы,
+make-before-break cutover, DNS blackout, paired SSH, ingress). Он дополняет
+статические проверки: харнесс `test_k8s_manifests.py` пинит манифесты,
+pre-flight гейт (CC-232, `launcher/k8s.py::_preflight_cluster`) перед каждым
+запуском проверяет доступность кластера и совпадение манифестов с контрактом —
+но ни то, ни другое не измеряет поведение CNI/политики в живом кластере.
+
+**Триггеры (обязательный запуск):**
+1. изменение `k8s/networkpolicy.yaml.tmpl` или `launcher/netpol.py` (до и после
+   cutover — smoke сам выполняет make-before-break);
+2. обновление k3s / CNI (flannel) / ноды кластера;
+3. любой сетевой дефект прогона (класс CC-225: ConnectionRefused/timeout Pod→Opik)
+   — до и после фикса;
+4. перед production-запуском после длительного простоя кластера (> 1 недели).
+
+**Периодичность:** еженедельно, cron-запись на хосте оператора (установка —
+действие оператора; супервизор cron не устанавливает):
+
+```cron
+# crontab -e (k3s-хост): понедельник 06:00
+0 6 * * 1 KUBECONFIG=$HOME/.kube/config STANOK_SERVER_URL=http://192.168.8.131:8080 \
+  /home/hermes/darkcast/stanok/infra/netpol-smoke.sh
+# опционально: STANOK_LAN_PEER=<ssh-хост-LAN> включает 2 внешних host-exposure
+# проверки; без него они честно помечаются SKIP (не PASS).
+```
+
+**Вердикт и доказательства:** exit 0 = все hard-проверки совпали; 1 = mismatch
+(дефект политики); 2 = preflight/cutover (инфраструктура). Доказательства —
+`stanok/evidence/netpol-<ts>/` (results.txt, applied манифест, sha256,
+versioned имена + revision). Строка вердикта строго динамическая:
+`N/N hard checks passed (M external SKIPPED, K INFO)`.
