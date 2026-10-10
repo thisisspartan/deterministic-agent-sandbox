@@ -45,3 +45,11 @@ Payload accepted (nonce match) → contract clean → fresh Job green (tests 2-4
 pass there too: the fresh Pod has the aligned HOME/TMPDIR and the same
 read-only root) → final verdict PASS, rc=0; `opik_traces` > 0; no EROFS
 entries in errors/failures.
+
+## Addendum (host-side, operator spec 2026-10-10 — NO machine deliverables)
+
+Item 3 of the operator's scope was implemented host-side after the machine
+run: `job_deadline()` (launcher/k8s.py) renders `activeDeadlineSeconds`
+with default 1800 s (30-min insurance; `STANOK_K8S_JOB_DEADLINE_S`
+overrides) and `ttlSecondsAfterFinished: 300` in BOTH Job templates.
+Pinned by `test_k8s_manifests.py` (timeouts + deadline default/override).
