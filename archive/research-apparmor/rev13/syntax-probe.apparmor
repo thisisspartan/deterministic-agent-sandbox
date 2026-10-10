@@ -1,0 +1,8 @@
+#include <tunables/global>
+profile x1a-syntax-probe flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  deny mount,
+  deny remount,
+  deny umount,
+  deny pivot_root,
+}

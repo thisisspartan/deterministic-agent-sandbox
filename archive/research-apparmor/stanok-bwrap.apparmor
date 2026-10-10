@@ -1,0 +1,117 @@
+# stanok-bwrap: container AppArmor profile for the stanok worker.
+# Based on docker-default (moby/profiles apparmor v0.2.3 template) with
+# `deny mount` replaced by the exact mount operations bubblewrap 0.8.0
+# performs (line refs bubblewrap.c), plus exec transitions to the
+# restrictive stanok-sandbox profile so sandboxed commands do NOT inherit
+# mount permissions.
+#
+# Load (root): apparmor_parser -r -W /tmp/x1a/stanok-bwrap.apparmor
+# Use:         docker run --security-opt apparmor=stanok-bwrap ...
+
+#include <tunables/global>
+
+profile stanok-bwrap flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  network,
+  # Disallow AF_ALG (Linux kernel crypto API); see https://copy.fail/
+  deny network alg,
+  # Disallow AF_VSOCK to prevent host/guest communication.
+  deny network vsock,
+  capability,
+  file,
+
+  # Host (privileged) processes may send signals to container processes.
+  signal (receive) peer=unconfined,
+  # runc may send signals to container processes (for "docker stop").
+  signal (receive) peer=runc,
+  # crun may send signals to container processes.
+  signal (receive) peer=crun,
+  signal (receive) peer=docker-default,
+  # Container processes may send signals amongst themselves.
+  signal (send,receive) peer=stanok-bwrap,
+  signal (send,receive) peer=stanok-sandbox,
+
+  # --- bubblewrap mount operations (scoped) ---
+  pivot_root,
+  remount /,                                              # 3055: make / slave (MS_REC|MS_SLAVE)
+  mount fstype=tmpfs /tmp,                                # 3059: root tmpfs (base_path=/tmp)
+  mount options=(bind) /tmp/newroot -> /tmp/newroot,     # 3078: self-bind of newroot
+  remount /oldroot,                                       # 3144: oldroot private
+  umount /oldroot,                                        # 3147: lazy umount of oldroot
+  mount options=(bind,rbind) /oldroot/** -> /newroot/**, # setup_newroot: all binds
+  remount /newroot/**,                                    # ro-remount of bind destinations
+  mount fstype=tmpfs /newroot/dev,                        # --dev /dev tmpfs
+  mount fstype=devpts /newroot/dev/pts,                  # devpts for --dev
+
+  # --- exec transitions: untrusted commands lose mount permissions ---
+  /bin/sh px -> stanok-sandbox,
+  /bin/bash px -> stanok-sandbox,
+  /bin/dash px -> stanok-sandbox,
+  /usr/bin/sh px -> stanok-sandbox,
+  /usr/bin/bash px -> stanok-sandbox,
+  /usr/bin/dash px -> stanok-sandbox,
+  change_profile -> stanok-sandbox,
+
+  # --- docker-default /proc and /sys denies (unchanged) ---
+  deny @{PROC}/* w,   # deny write for all files directly in /proc (not in a subdir)
+  deny @{PROC}/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/][^0-9/]*}/** w,
+  deny @{PROC}/sys/[^k]** w,
+  deny @{PROC}/sys/kernel/{?,??,[^s][^h][^m]**} w,
+  deny @{PROC}/sysrq-trigger rwklx,
+  deny @{PROC}/kcore rwklx,
+
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/devices/virtual/powercap/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+
+  # allow processes within the container to trace each other
+  ptrace (trace,tracedby,read,readby) peer=stanok-bwrap,
+  ptrace (trace,tracedby,read,readby) peer=stanok-sandbox,
+}
+
+profile stanok-sandbox flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  network,
+  deny network alg,
+  deny network vsock,
+  capability,
+  file,
+
+  signal (receive) peer=unconfined,
+  signal (receive) peer=runc,
+  signal (receive) peer=crun,
+  signal (receive) peer=docker-default,
+  signal (send,receive) peer=stanok-bwrap,
+  signal (send,receive) peer=stanok-sandbox,
+
+  # the inheritance block: sandboxed commands (and their descendants)
+  # cannot mount, remount, pivot_root or umount anything
+  deny mount,
+  deny umount,
+
+  deny @{PROC}/* w,
+  deny @{PROC}/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/][^0-9/]*}/** w,
+  deny @{PROC}/sys/[^k]** w,
+  deny @{PROC}/sys/kernel/{?,??,[^s][^h][^m]**} w,
+  deny @{PROC}/sysrq-trigger rwklx,
+  deny @{PROC}/kcore rwklx,
+
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/devices/virtual/powercap/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+
+  ptrace (trace,tracedby,read,readby) peer=stanok-sandbox,
+  ptrace (trace,tracedby) peer=stanok-bwrap,
+}

@@ -6,7 +6,12 @@
 2026-10-09 после прогона cc217-impl: `edit: launcher` физически невыполним для машины —
 `Edit(launcher/**)` denied в settings.stanok.json, репозиторий `:ro`, зоны записи только
 src/tests/docs/scripts; declared_carveout декларирует путь, но не даёт запись).
-Тикет TASK-STANOK-CC-217 (машинная реализация) СНЯТ. Приёмка после реализации: повторный прогон `tickets/TASK-STANOK-CC-215.md`
+Тикет TASK-STANOK-CC-217 (машинная реализация) СНЯТ.
+**Superseded частично (S2, PLAN-SIMPLIFY-2026-10-09):** I5-детектор (сверка
+`worker_rc` с exit контейнера), поля `worker_*` и значение `INTEGRITY-FAIL`
+УДАЛЕНЫ; приоритет публикации — CONTRACT-FAIL > FRESH-FAIL > claims работника
+(санкционированный зазор: чистая фальсификация поверх чистого контракта и
+зелёного fresh-чека больше не ловится — вердикт есть утверждение о ДЕРЕВЕ). Приёмка после реализации: повторный прогон `tickets/TASK-STANOK-CC-215.md`
 (ожидание CONTRACT-FAIL) + повторный прогон тикетов CC-210/CC-211 (ожидание PASS —
 regression happy-path и retry-путь).
 

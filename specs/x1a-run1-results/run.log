@@ -1,0 +1,21 @@
+== 0. preconditions 2026-10-10T00:34:19+03:00
+input OK: /tmp/x1a/stanok-bwrap-x1a-test.apparmor sha256=59ada1460ad1e8c5cbbf52bfa6608922ec62564ab8fd7d084bf84c3733fe1b94
+input OK: /tmp/x1a/v-cli3.json sha256=480ebf2322a9151a08dc5b64a253ba25b7e2e0b94f0bc90b676285d41c0de997
+input OK: /tmp/x1a/a8-probe.py sha256=5ce6bcb5c2d37a7fd2c8662742645c7d623cf9c1cd78eef0e4801df98a7bb2e5
+input OK: /tmp/x1a/a8-harness.py sha256=c596c5598abaa5fda5d6fb53da1ea119e1fb044d570e7667d51c0873d871012e
+input OK: /run/x1a-test/in/profile sha256=59ada1460ad1e8c5cbbf52bfa6608922ec62564ab8fd7d084bf84c3733fe1b94
+input OK: /run/x1a-test/in/v-cli3.json sha256=480ebf2322a9151a08dc5b64a253ba25b7e2e0b94f0bc90b676285d41c0de997
+input OK: /run/x1a-test/in/a8-probe.py sha256=5ce6bcb5c2d37a7fd2c8662742645c7d623cf9c1cd78eef0e4801df98a7bb2e5
+input OK: /run/x1a-test/in/harness.py sha256=c596c5598abaa5fda5d6fb53da1ea119e1fb044d570e7667d51c0873d871012e
+staging verified: /run/x1a-test/in (root:root 0700)
+image ID verified: sha256:913ad405b48948ab3c31d0222774163a65ad083b0c3541d8303be39380f5b15c
+run id: f9742cce-c26b-49ef-bcda-a2329114d909 (containers labeled stanok-x1a-run=f9742cce-c26b-49ef-bcda-a2329114d909)
+kernel preconditions OK
+parse-check OK (apparmor_parser -Q -K)
+profiles loaded and visible in /sys/kernel/security/apparmor/profiles
+== A7-strict 2026-10-10T00:34:19+03:00
+A7-strict rc=1
+bwrap: Failed to make / slave: Permission denied
+A7-strict FAIL — STOP (no widening)
+CLEANUP-OK: 'stanok-bwrap-x1a-test' absent from kernel policy
+CLEANUP-OK: 'stanok-sandbox-x1a-test' absent from kernel policy

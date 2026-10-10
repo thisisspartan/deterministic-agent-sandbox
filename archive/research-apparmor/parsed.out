@@ -1,0 +1,1141 @@
+# stanok-bwrap: container AppArmor profile for the stanok worker.
+# Based on docker-default (moby/profiles apparmor v0.2.3 template) with
+# `deny mount` replaced by the exact mount operations bubblewrap 0.8.0
+# performs (line refs bubblewrap.c), plus exec transitions to the
+# restrictive stanok-sandbox profile so sandboxed commands do NOT inherit
+# mount permissions.
+#
+# Load (root): apparmor_parser -r -W /tmp/x1a/stanok-bwrap.apparmor
+# Use:         docker run --security-opt apparmor=stanok-bwrap ...
+
+ 
+
+##included <tunables/global>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2006-2009 Novell/SUSE
+#    Copyright (C) 2010-2014 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# All the tunables definitions that should be available to every profile
+# should be included here
+
+ 
+
+##included <tunables/home>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2006-2009 Novell/SUSE
+#    Copyright (C) 2010 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# @{HOMEDIRS} is a space-separated list of where user home directories
+# are stored, for programs that must enumerate all home directories on a
+# system.
+@{HOMEDIRS}=/home/
+
+
+# @{HOME} is a space-separated list of all user home directories. While
+# it doesn't refer to a specific home directory (AppArmor doesn't
+# enforce discretionary access controls) it can be used as if it did
+# refer to a specific home directory
+@{HOME}=@{HOMEDIRS}/*/ /root/
+
+
+# Also, include files in tunables/home.d for site-specific adjustments
+ 
+
+##included <tunables/home.d>
+# This file is auto-generated. It is recommended you update it using:
+# $ sudo dpkg-reconfigure apparmor
+#
+# The following is a space-separated list of where additional user home
+# directories are stored, each must have a trailing '/'. Directories added
+# here are appended to @{HOMEDIRS}.  See tunables/home for details.
+#@{HOMEDIRS}+=
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2010 Canonical Ltd.
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# The following is a space-separated list of where additional user home
+# directories are stored, each must have a trailing '/'. Directories added
+# here are appended to @{HOMEDIRS}.  See tunables/home for details. Eg:
+#@{HOMEDIRS}+=/srv/nfs/home/ /mnt/home/
+
+
+ 
+
+##included <tunables/multiarch>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2010 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# @{multiarch} is the set of patterns matching multi-arch library
+# install prefixes.
+@{multiarch}=*-linux-gnu*
+
+
+# Also, include files in tunables/multiarch.d for site-specific adjustments
+ 
+
+##included <tunables/multiarch.d>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2011 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# The following is a space-separated list of where additional multipath
+# prefixes are stored, each should not have a trailing '/'. Directories
+# added here are appended to @{multiarch}. See tunables/mutliarch for details. Eg:
+#@{multiarch}+=*-freebsd* s390-hurd-zomg
+
+
+ 
+
+##included <tunables/proc>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2006 Novell/SUSE
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# @{PROC} is the location where procfs is mounted.
+@{PROC}=/proc/
+
+
+# Also, include files in tunables/proc.d for site-specific adjustments
+ 
+
+##failed include <tunables/proc.d>
+
+
+ 
+
+##included <tunables/alias>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2010 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# Alias rules can be used to rewrite paths and are done after variable
+# resolution. For example, if '/usr' is on removable media:
+# alias /usr/ -> /mnt/usr/,
+#
+# Or if mysql databases are stored in /home:
+# alias /var/lib/mysql/ -> /home/mysql/,
+
+# Also, include files in tunables/alias.d for site-specific adjustments
+ 
+
+##failed include <tunables/alias.d>
+
+
+ 
+
+##included <tunables/kernelvars>
+#    Copyright (C) 2012 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# This file should contain declarations to kernel vars or variables
+# that will become kernel vars at some point
+
+# until kernel vars are implemented
+# and until the parser supports nested groupings like
+#   @{pid}=[1-9]{[0-9]{[0-9]{[0-9]{[0-9]{[0-9],},},},},}
+# use
+@{pid}={[1-9],[1-9][0-9],[1-9][0-9][0-9],[1-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9][0-9],[1-4][0-9][0-9][0-9][0-9][0-9][0-9]}
+
+
+#same pattern as @{pid} for now
+@{tid}=@{pid}
+
+
+#A pattern for pids that can appear
+@{pids}=@{pid}
+
+
+# Placeholder for user id until kernel var is implemented to match
+# current user of the confined application.
+# Values are 0...4,294,967,295 (32-bit unsigned, 10 digits).
+@{uid}={[0-9],[1-9][0-9],[1-9][0-9][0-9],[1-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9],[1-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9],[1-4][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]}
+
+
+#same pattern as @{uid} for now
+@{uids}=@{uid}
+
+
+# until kernel var is implemented
+@{sys}=/sys/
+
+
+# Also, include files in tunables/kernelvars.d for site-specific adjustments
+ 
+
+##failed include <tunables/kernelvars.d>
+
+
+ 
+
+##included <tunables/system>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2025 Alexandre Pujol <alexandre@pujol.io>
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# Any digit
+@{d}=[0-9]
+
+
+# Any letter
+@{l}=[a-zA-Z]
+
+
+# Single alphanumeric character
+@{c}=[0-9a-zA-Z]
+
+
+# Word character: matches any letter, digit or underscore.
+@{w}=[a-zA-Z0-9_]
+
+
+# Single hexadecimal character
+@{h}=[0-9a-fA-F]
+
+
+# Integer up to 10 digits (0-9999999999)
+@{int}=@{d}{@{d},}{@{d},}{@{d},}{@{d},}{@{d},}{@{d},}{@{d},}{@{d},}{@{d},}
+
+
+# hexadecimal, alphanumeric and word up to 64 characters
+@{hex}=@{h}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}{@{h},}
+
+@{rand}=@{c}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}{@{c},}
+
+@{word}=@{w}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}{@{w},}
+
+
+# Unsigned integer over 8 bits (0...255)
+@{u8}=[0-9]{[0-9],} 1[0-9][0-9] 2[0-4][0-9] 25[0-5]
+
+
+# Unsigned integer over 16 bits (0...65,535 5 digits)
+@{u16}={@{d},[1-9]@{d},[1-9][@{d}@{d},[1-9]@{d}@{d}@{d},[1-6]@{d}@{d}@{d}@{d}}
+
+
+# Unsigned integer over 32 bits (0...4,294,967,295 10 digits)
+@{u32}={@{d},[1-9]@{d},[1-9]@{d}@{d},[1-9]@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-4]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}}
+
+
+# Unsigned integer over 64 bits (0...18,446,744,073,709,551,615 20 digits).
+@{u64}={@{d},[1-9]@{d},[1-9]@{d}@{d},[1-9]@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},[1-9]@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d},1@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}@{d}}
+
+
+# Any x digits characters
+@{int2}=@{d}@{d}
+
+@{int4}=@{int2}@{int2}
+
+@{int6}=@{int4}@{int2}
+
+@{int8}=@{int4}@{int4}
+
+@{int9}=@{int8}@{d}
+
+@{int10}=@{int8}@{int2}
+
+@{int12}=@{int8}@{int4}
+
+@{int15}=@{int8}@{int4}@{int2}@{d}
+
+@{int16}=@{int8}@{int8}
+
+@{int32}=@{int16}@{int16}
+
+@{int64}=@{int32}@{int32}
+
+
+# Any x hexadecimal characters
+@{hex2}=@{h}@{h}
+
+@{hex4}=@{hex2}@{hex2}
+
+@{hex6}=@{hex4}@{hex2}
+
+@{hex8}=@{hex4}@{hex4}
+
+@{hex9}=@{hex8}@{h}
+
+@{hex10}=@{hex8}@{hex2}
+
+@{hex12}=@{hex8}@{hex4}
+
+@{hex15}=@{hex8}@{hex4}@{hex2}@{h}
+
+@{hex16}=@{hex8}@{hex8}
+
+@{hex32}=@{hex16}@{hex16}
+
+@{hex38}=@{hex32}@{hex6}
+
+@{hex64}=@{hex32}@{hex32}
+
+
+# Any x alphanumeric characters
+@{rand2}=@{c}@{c}
+
+@{rand4}=@{rand2}@{rand2}
+
+@{rand6}=@{rand4}@{rand2}
+
+@{rand8}=@{rand4}@{rand4}
+
+@{rand9}=@{rand8}@{c}
+
+@{rand10}=@{rand8}@{rand2}
+
+@{rand12}=@{rand8}@{rand4}
+
+@{rand15}=@{rand8}@{rand4}@{rand2}@{c}
+
+@{rand16}=@{rand8}@{rand8}
+
+@{rand32}=@{rand16}@{rand16}
+
+@{rand64}=@{rand32}@{rand32}
+
+
+# Any x word characters
+@{word2}=@{w}@{w}
+
+@{word4}=@{word2}@{word2}
+
+@{word6}=@{word4}@{word2}
+
+@{word8}=@{word4}@{word4}
+
+@{word9}=@{word8}@{w}
+
+@{word10}=@{word8}@{word2}
+
+@{word12}=@{word8}@{word4}
+
+@{word15}=@{word8}@{word4}@{word2}@{w}
+
+@{word16}=@{word8}@{word8}
+
+@{word32}=@{word16}@{word16}
+
+@{word64}=@{word32}@{word32}
+
+
+# Shortcut for PCI bus (e.g., /sys/devices/@{pci_bus}/**)
+@{pci_bus}=pci@{hex4}:@{hex2}
+
+
+ 
+
+##failed include <tunables/system.d>
+
+
+ 
+
+##included <tunables/xdg-user-dirs>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2014 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# Define the common set of XDG user directories (usually defined in
+# /etc/xdg/user-dirs.defaults)
+@{XDG_DESKTOP_DIR}="Desktop"
+
+@{XDG_DOWNLOAD_DIR}="Downloads"
+
+@{XDG_TEMPLATES_DIR}="Templates"
+
+@{XDG_PUBLICSHARE_DIR}="Public"
+
+@{XDG_DOCUMENTS_DIR}="Documents"
+
+@{XDG_MUSIC_DIR}="Music"
+
+@{XDG_PICTURES_DIR}="Pictures"
+
+@{XDG_VIDEOS_DIR}="Videos"
+
+
+# Also, include files in tunables/xdg-user-dirs.d for site-specific adjustments
+ 
+
+##included <tunables/xdg-user-dirs.d>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2014 Canonical Ltd.
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# The following may be used to add additional entries such as for
+# translations. See tunables/xdg-user-dirs for details. Eg:
+#@{XDG_MUSIC_DIR}+="Musique"
+
+#@{XDG_DESKTOP_DIR}+=""
+#@{XDG_DOWNLOAD_DIR}+=""
+#@{XDG_TEMPLATES_DIR}+=""
+#@{XDG_PUBLICSHARE_DIR}+=""
+#@{XDG_DOCUMENTS_DIR}+=""
+#@{XDG_MUSIC_DIR}+=""
+#@{XDG_PICTURES_DIR}+=""
+#@{XDG_VIDEOS_DIR}+=""
+
+
+ 
+
+##included <tunables/share>
+@{flatpak_exports_root} = {flatpak/exports,flatpak/{app,runtime}/*/*/*/*/export}
+
+
+# System-wide directories with behaviour analogous to /usr/share
+# in patterns like the freedesktop.org basedir spec. These are
+# owned by root or a system user, appear in XDG_DATA_DIRS, and
+# are the parent directory for `applications`, `themes`,
+# `dbus-1/services`, etc.
+@{system_share_dirs} = /{usr,usr/local,var/lib/@{flatpak_exports_root}}/share
+
+
+# Per-user/personal directories with behaviour analogous to
+# ~/.local/share in patterns like the freedesktop.org basedir spec.
+# These are owned by the user running an application, appear in
+# XDG_DATA_DIRS or XDG_DATA_HOME, and are the parent directory
+# for the same subdirectories as @{system_share_dirs}
+@{user_share_dirs} = @{HOME}/.local{,/share/@{flatpak_exports_root}}/share
+
+
+# Also, include files in tunables/share.d for site-specific adjustments
+ 
+
+##failed include <tunables/share.d>
+
+
+ 
+
+##included <tunables/etc>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2020 Christian Boltz
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# @{etc_ro} contains a space-separated list of the system configuration directories.
+# Traditionally this means /etc/, but when using a read-only / filesystem and/or
+# with the goal of having only user-modified config files in /etc/, directories
+# like /usr/etc/ get introduced for storing the default config.
+
+# @{etc_ro} contains directories with configuration files, including read-only directories.
+# Do not use @{etc_ro} in rules that allow write access.
+@{etc_ro}=/etc/ /usr/etc/
+
+
+# @{etc_rw} contains directories where writing to configuration files is allowed.
+# @{etc_rw} should always be a subset of @{etc_ro}.
+#
+# Only use @{etc_rw} if the profile allows writing to a configuration file.
+# For rules that only allows read access, use @{etc_ro}.
+@{etc_rw}=/etc/
+
+
+# Also, include files in tunables/etc.d for site-specific adjustments
+ 
+
+##failed include <tunables/etc.d>
+
+
+ 
+
+##included <tunables/run>
+@{run}=/run/ /var/run/
+
+
+# Also, include files in tunables/run.d for site-specific adjustments
+ 
+
+##failed include <tunables/run.d>
+
+
+
+# Also, include files in tunables/global.d for site-specific adjustments
+ 
+
+##failed include <tunables/global.d>
+
+
+
+profile stanok-bwrap flags=(attach_disconnected,mediate_deleted) {
+   
+
+##included <abstractions/base>
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2009 Novell/SUSE
+#    Copyright (C) 2009-2011 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+   
+
+##included <abstractions/crypto>
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2009 Novell/SUSE
+#    Copyright (C) 2009-2011 Canonical Ltd.
+#    Copyright (C) 2021 Christian Boltz
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+  # Global config of openssl
+   
+
+##included <abstractions/openssl>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2011 Novell/SUSE
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+  /etc/ssl/openssl.cnf r,
+  /etc/ssl/openssl-*.cnf r,
+  /etc/ssl/{engdef*,engines*}.d/ r,
+  /etc/ssl/{engdef*,engines*}.d/*.cnf r,
+  /usr/share/ssl/openssl.cnf r,
+
+  # Include additions to the abstraction
+   
+
+##failed include <abstractions/openssl.d>
+
+
+
+  @{etc_ro}/gcrypt/hwf.deny r,
+  @{etc_ro}/gcrypt/random.conf r,
+  @{PROC}/sys/crypto/fips_enabled r,
+
+  # libgcrypt reads some flags from /proc
+  @{PROC}/sys/crypto/* r,
+
+  # crypto policies used by various libraries
+  /etc/crypto-policies/*/*.txt r,
+  /usr/share/crypto-policies/*/*.txt r,
+
+  # Global gnutls config
+  @{etc_ro}/gnutls/config r,
+  @{etc_ro}/gnutls/pkcs11.conf r,
+
+   
+
+##failed include <abstractions/crypto.d>
+
+
+
+  # (Note that the ldd profile has inlined this file; if you make
+  # modifications here, please consider including them in the ldd
+  # profile as well.)
+
+  # The __canary_death_handler function writes a time-stamped log
+  # message to /dev/log for logging by syslogd. So, /dev/log, timezones,
+  # and localisations of date should be available EVERYWHERE, so
+  # StackGuard, FormatGuard, etc., alerts can be properly logged.
+  /dev/log                       w,
+  /dev/random                    r,
+  /dev/urandom                   r,
+  # Allow access to the uuidd daemon (this daemon is a thin wrapper around
+  # time and getrandom()/{,u}random and, when available, runs under an
+  # unprivilged, dedicated user).
+  @{run}/uuidd/request           r,
+  @{etc_ro}/locale/**          r,
+  @{etc_ro}/locale.alias       r,
+  @{etc_ro}/localtime          r,
+  @{etc_rw}/localtime          r,
+  /etc/writable/localtime        r,
+  /usr/share/locale-bundle/**    r,
+  /usr/share/locale-langpack/**  r,
+  /usr/share/locale/             r,
+  /usr/share/locale/**           r,
+  /usr/share/**/locale/**        r,
+  /usr/share/zoneinfo{,-icu}/    r,
+  /usr/share/zoneinfo{,-icu}/**  r,
+  /usr/share/X11/locale/**       r,
+  @{run}/systemd/journal/dev-log w,
+  # systemd native journal API (see sd_journal_print(4))
+  @{run}/systemd/journal/socket  w,
+  # Nested containers and anything using systemd-cat need this. 'r' shouldn't
+  # be required but applications fail without it. journald doesn't leak
+  # anything when reading so this is ok.
+  @{run}/systemd/journal/stdout  rw,
+
+  /usr/lib{,32,64}/locale/**             mr,
+  /usr/lib{,32,64}/gconv/*.so            mr,
+  /usr/lib{,32,64}/gconv/gconv-modules*  mr,
+  /usr/lib/@{multiarch}/gconv/*.so           mr,
+  /usr/lib/@{multiarch}/gconv/gconv-modules* mr,
+
+  # used by glibc when binding to ephemeral ports
+  @{etc_ro}/bindresvport.blacklist    r,
+
+  # ld.so.cache and ld are used to load shared libraries; they are best
+  # available everywhere
+  @{etc_ro}/ld.so.cache               mr,
+  @{etc_ro}/ld.so.conf                r,
+  @{etc_ro}/ld.so.conf.d/{,*.conf}    r,
+  @{etc_ro}/ld.so.preload             r,
+  @{etc_ro}/ld-musl-*.path            r,
+  /{usr/,}lib{,32,64}/ld{,32,64}-*.so   mr,
+  /{usr/,}lib/@{multiarch}/ld{,32,64}-*.so    mr,
+  /{usr/,}lib/tls/i686/{cmov,nosegneg}/ld-*.so     mr,
+  /{usr/,}lib/i386-linux-gnu/tls/i686/{cmov,nosegneg}/ld-*.so     mr,
+  /opt/*-linux-uclibc/lib/ld-uClibc*so* mr,
+
+  # we might as well allow everything to use common libraries
+  /{usr/,}lib{,32,64}/**                r,
+  /{usr/,}lib{,32,64}/**.so*       mr,
+  /{usr/,}lib/@{multiarch}/**            r,
+  /{usr/,}lib/@{multiarch}/**.so*   mr,
+  /{usr/,}lib/tls/i686/{cmov,nosegneg}/*.so*    mr,
+  /{usr/,}lib/i386-linux-gnu/tls/i686/{cmov,nosegneg}/*.so*    mr,
+
+  # FIPS-140-2 versions of some crypto libraries need to access their
+  # associated integrity verification file, or they will abort.
+  /{usr/,}lib{,32,64}/.lib*.so*.hmac      r,
+  /{usr/,}lib/@{multiarch}/.lib*.so*.hmac r,
+
+  # /dev/null is pretty harmless and frequently used
+  /dev/null                      rw,
+  # as is /dev/zero
+  /dev/zero                      rw,
+  # recent glibc uses /dev/full in preference to /dev/null for programs
+  # that don't have open fds at exec()
+  /dev/full                      rw,
+
+  # Sometimes used to determine kernel/user interfaces to use
+  @{PROC}/sys/kernel/version     r,
+  # Depending on which glibc routine uses this file, base may not be the
+  # best place -- but many profiles require it, and it is quite harmless.
+  @{PROC}/sys/kernel/ngroups_max r,
+
+  # glibc's sysconf(3) routine to determine free memory, etc
+  @{PROC}/meminfo                r,
+  @{PROC}/stat                   r,
+  @{PROC}/cpuinfo                r,
+  @{sys}/devices/system/cpu/       r,
+  @{sys}/devices/system/cpu/online r,
+  @{sys}/devices/system/cpu/possible r,
+
+  # transparent hugepage support
+  @{sys}/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+
+  # glibc's *printf protections read the maps file
+  @{PROC}/@{pid}/{maps,auxv,status} r,
+
+  # some applications will display license information
+  /usr/share/common-licenses/**  r,
+
+  # glibc statvfs
+  @{PROC}/filesystems            r,
+
+  # glibc malloc (man 5 proc)
+  @{PROC}/sys/vm/overcommit_memory r,
+
+  # Allow determining the highest valid capability of the running kernel
+  @{PROC}/sys/kernel/cap_last_cap r,
+
+  # Allow other processes to read our /proc entries, futexes, perf tracing and
+  # kcmp for now (they will need 'read' in the first place). Administrators can
+  # override with:
+  #   deny ptrace (readby) ...
+  ptrace (readby),
+
+  # Allow other processes to trace us by default (they will need 'trace' in
+  # the first place). Administrators can override with:
+  #   deny ptrace (tracedby) ...
+  ptrace (tracedby),
+
+  # Allow us to ptrace read ourselves
+  ptrace (read) peer=@{profile_name},
+
+  # Allow unconfined processes to send us signals by default
+  signal (receive) peer=unconfined,
+
+  # Allow us to signal ourselves
+  signal peer=@{profile_name},
+
+  # Checking for PID existence is quite common so add it by default for now
+  signal (receive, send) set=("exists"),
+
+  # Allow us to create and use abstract and anonymous sockets
+  unix peer=(label=@{profile_name}),
+
+  # Allow unconfined processes to us via unix sockets
+  unix (receive) peer=(label=unconfined),
+
+  # Allow us to create abstract and anonymous sockets
+  unix (create),
+
+  # Allow us to getattr, getopt, setop and shutdown on unix sockets
+  unix (getattr, getopt, setopt, shutdown),
+
+  # Workaround https://launchpad.net/bugs/359338 until upstream handles stacked
+  # filesystems generally. This does not appreciably decrease security with
+  # Ubuntu profiles because the user is expected to have access to files owned
+  # by him/her. Exceptions to this are explicit in the profiles. While this rule
+  # grants access to those exceptions, the intended privacy is maintained due to
+  # the encrypted contents of the files in this directory. Files in this
+  # directory will also use filename encryption by default, so the files are
+  # further protected. Also, with the use of 'owner', this rule properly
+  # prevents access to the files from processes running under a different uid.
+
+  # encrypted ~/.Private and old-style encrypted $HOME
+  owner @{HOME}/.Private/ r,
+  owner @{HOME}/.Private/** mrixwlk,
+  # new-style encrypted $HOME
+  owner @{HOMEDIRS}/.ecryptfs/*/.Private/ r,
+  owner @{HOMEDIRS}/.ecryptfs/*/.Private/** mrixwlk,
+
+
+  # Include additions to the abstraction
+   
+
+##failed include <abstractions/base.d>
+
+
+
+  network,
+  # Disallow AF_ALG (Linux kernel crypto API); see https://copy.fail/
+  deny network alg,
+  # Disallow AF_VSOCK to prevent host/guest communication.
+  deny network vsock,
+  capability,
+  file,
+
+  # Host (privileged) processes may send signals to container processes.
+  signal (receive) peer=unconfined,
+  # runc may send signals to container processes (for "docker stop").
+  signal (receive) peer=runc,
+  # crun may send signals to container processes.
+  signal (receive) peer=crun,
+  signal (receive) peer=docker-default,
+  # Container processes may send signals amongst themselves.
+  signal (send,receive) peer=stanok-bwrap,
+  signal (send,receive) peer=stanok-sandbox,
+
+  # --- bubblewrap mount operations (scoped) ---
+  pivot_root,
+  remount /,                                              # 3055: make / slave (MS_REC|MS_SLAVE)
+  mount fstype=tmpfs /tmp,                                # 3059: root tmpfs (base_path=/tmp)
+  mount options=(bind) /tmp/newroot -> /tmp/newroot,     # 3078: self-bind of newroot
+  remount /oldroot,                                       # 3144: oldroot private
+  umount /oldroot,                                        # 3147: lazy umount of oldroot
+  mount options=(bind,rbind) /oldroot/** -> /newroot/**, # setup_newroot: all binds
+  remount /newroot/**,                                    # ro-remount of bind destinations
+  mount fstype=tmpfs /newroot/dev,                        # --dev /dev tmpfs
+  mount fstype=devpts /newroot/dev/pts,                  # devpts for --dev
+
+  # --- exec transitions: untrusted commands lose mount permissions ---
+  /bin/sh px -> stanok-sandbox,
+  /bin/bash px -> stanok-sandbox,
+  /bin/dash px -> stanok-sandbox,
+  /usr/bin/sh px -> stanok-sandbox,
+  /usr/bin/bash px -> stanok-sandbox,
+  /usr/bin/dash px -> stanok-sandbox,
+  change_profile -> stanok-sandbox,
+
+  # --- docker-default /proc and /sys denies (unchanged) ---
+  deny @{PROC}/* w,   # deny write for all files directly in /proc (not in a subdir)
+  deny @{PROC}/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/][^0-9/]*}/** w,
+  deny @{PROC}/sys/[^k]** w,
+  deny @{PROC}/sys/kernel/{?,??,[^s][^h][^m]**} w,
+  deny @{PROC}/sysrq-trigger rwklx,
+  deny @{PROC}/kcore rwklx,
+
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/devices/virtual/powercap/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+
+  # allow processes within the container to trace each other
+  ptrace (trace,tracedby,read,readby) peer=stanok-bwrap,
+  ptrace (trace,tracedby,read,readby) peer=stanok-sandbox,
+}
+
+profile stanok-sandbox flags=(attach_disconnected,mediate_deleted) {
+   
+
+##included <abstractions/base>
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2009 Novell/SUSE
+#    Copyright (C) 2009-2011 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+   
+
+##included <abstractions/crypto>
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2009 Novell/SUSE
+#    Copyright (C) 2009-2011 Canonical Ltd.
+#    Copyright (C) 2021 Christian Boltz
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+  # Global config of openssl
+   
+
+##included <abstractions/openssl>
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2011 Novell/SUSE
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+  /etc/ssl/openssl.cnf r,
+  /etc/ssl/openssl-*.cnf r,
+  /etc/ssl/{engdef*,engines*}.d/ r,
+  /etc/ssl/{engdef*,engines*}.d/*.cnf r,
+  /usr/share/ssl/openssl.cnf r,
+
+  # Include additions to the abstraction
+   
+
+##failed include <abstractions/openssl.d>
+
+
+
+  @{etc_ro}/gcrypt/hwf.deny r,
+  @{etc_ro}/gcrypt/random.conf r,
+  @{PROC}/sys/crypto/fips_enabled r,
+
+  # libgcrypt reads some flags from /proc
+  @{PROC}/sys/crypto/* r,
+
+  # crypto policies used by various libraries
+  /etc/crypto-policies/*/*.txt r,
+  /usr/share/crypto-policies/*/*.txt r,
+
+  # Global gnutls config
+  @{etc_ro}/gnutls/config r,
+  @{etc_ro}/gnutls/pkcs11.conf r,
+
+   
+
+##failed include <abstractions/crypto.d>
+
+
+
+  # (Note that the ldd profile has inlined this file; if you make
+  # modifications here, please consider including them in the ldd
+  # profile as well.)
+
+  # The __canary_death_handler function writes a time-stamped log
+  # message to /dev/log for logging by syslogd. So, /dev/log, timezones,
+  # and localisations of date should be available EVERYWHERE, so
+  # StackGuard, FormatGuard, etc., alerts can be properly logged.
+  /dev/log                       w,
+  /dev/random                    r,
+  /dev/urandom                   r,
+  # Allow access to the uuidd daemon (this daemon is a thin wrapper around
+  # time and getrandom()/{,u}random and, when available, runs under an
+  # unprivilged, dedicated user).
+  @{run}/uuidd/request           r,
+  @{etc_ro}/locale/**          r,
+  @{etc_ro}/locale.alias       r,
+  @{etc_ro}/localtime          r,
+  @{etc_rw}/localtime          r,
+  /etc/writable/localtime        r,
+  /usr/share/locale-bundle/**    r,
+  /usr/share/locale-langpack/**  r,
+  /usr/share/locale/             r,
+  /usr/share/locale/**           r,
+  /usr/share/**/locale/**        r,
+  /usr/share/zoneinfo{,-icu}/    r,
+  /usr/share/zoneinfo{,-icu}/**  r,
+  /usr/share/X11/locale/**       r,
+  @{run}/systemd/journal/dev-log w,
+  # systemd native journal API (see sd_journal_print(4))
+  @{run}/systemd/journal/socket  w,
+  # Nested containers and anything using systemd-cat need this. 'r' shouldn't
+  # be required but applications fail without it. journald doesn't leak
+  # anything when reading so this is ok.
+  @{run}/systemd/journal/stdout  rw,
+
+  /usr/lib{,32,64}/locale/**             mr,
+  /usr/lib{,32,64}/gconv/*.so            mr,
+  /usr/lib{,32,64}/gconv/gconv-modules*  mr,
+  /usr/lib/@{multiarch}/gconv/*.so           mr,
+  /usr/lib/@{multiarch}/gconv/gconv-modules* mr,
+
+  # used by glibc when binding to ephemeral ports
+  @{etc_ro}/bindresvport.blacklist    r,
+
+  # ld.so.cache and ld are used to load shared libraries; they are best
+  # available everywhere
+  @{etc_ro}/ld.so.cache               mr,
+  @{etc_ro}/ld.so.conf                r,
+  @{etc_ro}/ld.so.conf.d/{,*.conf}    r,
+  @{etc_ro}/ld.so.preload             r,
+  @{etc_ro}/ld-musl-*.path            r,
+  /{usr/,}lib{,32,64}/ld{,32,64}-*.so   mr,
+  /{usr/,}lib/@{multiarch}/ld{,32,64}-*.so    mr,
+  /{usr/,}lib/tls/i686/{cmov,nosegneg}/ld-*.so     mr,
+  /{usr/,}lib/i386-linux-gnu/tls/i686/{cmov,nosegneg}/ld-*.so     mr,
+  /opt/*-linux-uclibc/lib/ld-uClibc*so* mr,
+
+  # we might as well allow everything to use common libraries
+  /{usr/,}lib{,32,64}/**                r,
+  /{usr/,}lib{,32,64}/**.so*       mr,
+  /{usr/,}lib/@{multiarch}/**            r,
+  /{usr/,}lib/@{multiarch}/**.so*   mr,
+  /{usr/,}lib/tls/i686/{cmov,nosegneg}/*.so*    mr,
+  /{usr/,}lib/i386-linux-gnu/tls/i686/{cmov,nosegneg}/*.so*    mr,
+
+  # FIPS-140-2 versions of some crypto libraries need to access their
+  # associated integrity verification file, or they will abort.
+  /{usr/,}lib{,32,64}/.lib*.so*.hmac      r,
+  /{usr/,}lib/@{multiarch}/.lib*.so*.hmac r,
+
+  # /dev/null is pretty harmless and frequently used
+  /dev/null                      rw,
+  # as is /dev/zero
+  /dev/zero                      rw,
+  # recent glibc uses /dev/full in preference to /dev/null for programs
+  # that don't have open fds at exec()
+  /dev/full                      rw,
+
+  # Sometimes used to determine kernel/user interfaces to use
+  @{PROC}/sys/kernel/version     r,
+  # Depending on which glibc routine uses this file, base may not be the
+  # best place -- but many profiles require it, and it is quite harmless.
+  @{PROC}/sys/kernel/ngroups_max r,
+
+  # glibc's sysconf(3) routine to determine free memory, etc
+  @{PROC}/meminfo                r,
+  @{PROC}/stat                   r,
+  @{PROC}/cpuinfo                r,
+  @{sys}/devices/system/cpu/       r,
+  @{sys}/devices/system/cpu/online r,
+  @{sys}/devices/system/cpu/possible r,
+
+  # transparent hugepage support
+  @{sys}/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+
+  # glibc's *printf protections read the maps file
+  @{PROC}/@{pid}/{maps,auxv,status} r,
+
+  # some applications will display license information
+  /usr/share/common-licenses/**  r,
+
+  # glibc statvfs
+  @{PROC}/filesystems            r,
+
+  # glibc malloc (man 5 proc)
+  @{PROC}/sys/vm/overcommit_memory r,
+
+  # Allow determining the highest valid capability of the running kernel
+  @{PROC}/sys/kernel/cap_last_cap r,
+
+  # Allow other processes to read our /proc entries, futexes, perf tracing and
+  # kcmp for now (they will need 'read' in the first place). Administrators can
+  # override with:
+  #   deny ptrace (readby) ...
+  ptrace (readby),
+
+  # Allow other processes to trace us by default (they will need 'trace' in
+  # the first place). Administrators can override with:
+  #   deny ptrace (tracedby) ...
+  ptrace (tracedby),
+
+  # Allow us to ptrace read ourselves
+  ptrace (read) peer=@{profile_name},
+
+  # Allow unconfined processes to send us signals by default
+  signal (receive) peer=unconfined,
+
+  # Allow us to signal ourselves
+  signal peer=@{profile_name},
+
+  # Checking for PID existence is quite common so add it by default for now
+  signal (receive, send) set=("exists"),
+
+  # Allow us to create and use abstract and anonymous sockets
+  unix peer=(label=@{profile_name}),
+
+  # Allow unconfined processes to us via unix sockets
+  unix (receive) peer=(label=unconfined),
+
+  # Allow us to create abstract and anonymous sockets
+  unix (create),
+
+  # Allow us to getattr, getopt, setop and shutdown on unix sockets
+  unix (getattr, getopt, setopt, shutdown),
+
+  # Workaround https://launchpad.net/bugs/359338 until upstream handles stacked
+  # filesystems generally. This does not appreciably decrease security with
+  # Ubuntu profiles because the user is expected to have access to files owned
+  # by him/her. Exceptions to this are explicit in the profiles. While this rule
+  # grants access to those exceptions, the intended privacy is maintained due to
+  # the encrypted contents of the files in this directory. Files in this
+  # directory will also use filename encryption by default, so the files are
+  # further protected. Also, with the use of 'owner', this rule properly
+  # prevents access to the files from processes running under a different uid.
+
+  # encrypted ~/.Private and old-style encrypted $HOME
+  owner @{HOME}/.Private/ r,
+  owner @{HOME}/.Private/** mrixwlk,
+  # new-style encrypted $HOME
+  owner @{HOMEDIRS}/.ecryptfs/*/.Private/ r,
+  owner @{HOMEDIRS}/.ecryptfs/*/.Private/** mrixwlk,
+
+
+  # Include additions to the abstraction
+   
+
+##failed include <abstractions/base.d>
+
+
+
+  network,
+  deny network alg,
+  deny network vsock,
+  capability,
+  file,
+
+  signal (receive) peer=unconfined,
+  signal (receive) peer=runc,
+  signal (receive) peer=crun,
+  signal (receive) peer=docker-default,
+  signal (send,receive) peer=stanok-bwrap,
+  signal (send,receive) peer=stanok-sandbox,
+
+  # the inheritance block: sandboxed commands (and their descendants)
+  # cannot mount, remount, pivot_root or umount anything
+  deny mount,
+  deny umount,
+
+  deny @{PROC}/* w,
+  deny @{PROC}/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/][^0-9/]*}/** w,
+  deny @{PROC}/sys/[^k]** w,
+  deny @{PROC}/sys/kernel/{?,??,[^s][^h][^m]**} w,
+  deny @{PROC}/sysrq-trigger rwklx,
+  deny @{PROC}/kcore rwklx,
+
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/devices/virtual/powercap/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+
+  ptrace (trace,tracedby,read,readby) peer=stanok-sandbox,
+  ptrace (trace,tracedby) peer=stanok-bwrap,
+}
