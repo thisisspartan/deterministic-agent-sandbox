@@ -163,6 +163,13 @@ or to `tail`/`cat` logs while the machine is running.
   the ticket requirements, do NOT relaunch the same ticket unchanged; relaunch
   refined as `<label>-retry1` (counts toward the 3-attempt limit). A second
   FRESH-FAIL on the same ticket → stop condition (call the human).
+- **B5. PASS-BLIND** (`probe_result: "PASS-BLIND"`, CC-234): verifier PASS
+  with rc as measured, but `tool_activity.bash_ok == 0` — the agent never
+  made a successful Bash call; the suite was greened only by in-process
+  hooks, the agent wrote blind. NOT a clean acceptance: do NOT mark DONE.
+  Defect class B — environment first (the Pod tmp root / self-check), then
+  the ticket; relaunch refined as `<label>-retry1` (counts toward the
+  3-attempt limit).
 
 ## 4. Stop conditions (call a human)
 
