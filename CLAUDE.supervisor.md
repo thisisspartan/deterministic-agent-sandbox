@@ -118,23 +118,31 @@ or to `tail`/`cat` logs while the machine is running.
    `/home/hermes/darkcast/stanok/launch.sh stop <label>`.
 
 ### Verdict from summary.json
+Schema v2 (CC-237): `summary.json` is TYPED — scalars plus the typed
+`loop_trap {tool, hash, n}` record; it carries NO free text. All failure
+text (verify failures, contract-lock violations, host-issued explanations)
+is in `evidence/<label>/failures.log`, one line per failure — read it when
+a verdict class needs the cause.
 - **C. NO-OP** (`probe_result: "NO-OP-PASS"`):
   Deliverable already satisfies its tests without a new build. Do NOT retry.
   Mark `[~] SKIPPED (pre-satisfied)` in specs/STATUS.md — not DONE (rc != 0, see Forbidden).
   Move to the next ticket.
-- **A. SUCCESS** (`rc: 0` AND `verifier: "PASS"` AND `contract_lock_violations == []`):
+- **A. SUCCESS** (`rc: 0` AND `verifier: "PASS"` AND `probe_result` is not
+  `CONTRACT-FAIL`):
   Mark the ticket `[x] DONE` in `specs/STATUS.md`.
   Move IMMEDIATELY to the next ticket. Do not stop for an intermediate report.
-  A non-empty `contract_lock_violations` is a DEFECT (B) even when rc=0 and
+  A host-issued `CONTRACT-FAIL` (class B3) is a DEFECT even when rc=0 and
   verifier=PASS: the machine touched `tests/` or `scripts/run.sh` after the
   manifest snapshot — the PASS was computed against tampered tests.
 - **B. DEFECT** (`rc != 0` OR `verifier: "FAIL"`):
   The launcher already performed local retries inside the session with an adaptive `<contract_lock>`.
-  The defect cause — from the `failures` or `errors` field in `summary.json`.
+  The defect cause — from `failures.log` in `evidence/<label>/` (schema v2:
+  the text is never in `summary.json`).
   Refine the ticket requirements (edge cases/specification) and relaunch: `<label>-retry1`.
 - **B2. LOOP-TRAP** (`probe_result: "LOOP-TRAP"`, CC-207): the circuit breaker
   ended the run mid-turn — the machine repeated one identical tool call 5x in a
-  row (`loop_trap` field in `summary.json` carries tool/hash/n). Defect class B:
+  row (the typed `loop_trap` field in `summary.json` carries tool/hash/n;
+  `tool_activity` shows the trap turn's real Bash counts — CC-237). Defect class B:
   the loop was designed by the ticket, not by the code — refine the ticket
   requirements, do NOT relaunch the same ticket unchanged; the refined ticket is
   relaunched as `<label>-retry1` and counts toward the 3-attempt limit.
@@ -158,7 +166,7 @@ or to `tail`/`cat` logs while the machine is running.
 - **B4. FRESH-FAIL** (`probe_result: "FRESH-FAIL"`, SPEC-VERDICT-INTEGRITY
   §4): the worker claimed PASS; the host's independent fresh check (a new
   container the worker never touched) refuted it — `rc` is the fresh check's
-  exit, the failure tail is in `errors`. DEFECT with cause "verdict-substitution suspected":
+  exit, the failure tail is in `failures.log`. DEFECT with cause "verdict-substitution suspected":
   the tests passed only in the worker's own contaminated environment — refine
   the ticket requirements, do NOT relaunch the same ticket unchanged; relaunch
   refined as `<label>-retry1` (counts toward the 3-attempt limit). A second
@@ -176,7 +184,7 @@ or to `tail`/`cat` logs while the machine is running.
 ONLY:
 1. All tickets done → final report to the human.
 2. 3 consecutive failed attempts on one ticket.
-3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image, or the fresh check could not run — the `errors` field names which).
+3. Infrastructure failure: `rc=20` (server unavailable), `rc=21` (lock held), `rc=22` (dirty tree), `rc=24` (role leak — `CLAUDE.md` in the parent repo), `rc=16` (ENV-FAIL — test runner unavailable in the image, or the fresh check could not run — `failures.log` names which).
    `rc=24` is escalated to the human IMMEDIATELY — it is not a ticket defect; do not burn 3 retries on it.
    `rc=16` is an infrastructure defect, not a ticket defect: do NOT retry the ticket — call the human (rebuild the image, or investigate the fresh-check failure). (Image provenance — digest/runner availability — is a `doctor.sh` check, not a launch code; run `./setup.sh` if doctor flags it.)
 4. Architectural dead end in `CONTEXT.md` / `specs/`.
