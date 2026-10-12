@@ -71,10 +71,13 @@ against it — missing dir = rc=28; the dir is gitignored, the tree stays
 clean). The worktree has no `.venv`
 (`.venv/` ignores directories only — a symlink dirties the tree, rc=22):
 launch it with `STANOK_PY=/home/hermes/darkcast/stanok/.venv/bin/python`.
-After the run: capture the
-summary.json fields FIRST (evidence/ lives in the worktree), then
+After the run: copy the whole
+`evidence/<label>/` dir to the main checkout FIRST —
+`cp -r <worktree>/evidence/<label> /home/hermes/darkcast/stanok/evidence/`
+(the durable proof must survive the worktree; incident verify-registry2
+2026-10-12: its summary.json was lost with the worktree), then
 `git -C /home/hermes/darkcast/stanok worktree remove --force <path>` (the
-machine's untracked src/tests artifacts + evidence/ are disposable by design)
+machine's untracked src/tests artifacts are disposable by design)
 + delete the branch + record the result in CONTEXT.md.
 
 ## 3. Pipeline: launch → validate → next ticket
