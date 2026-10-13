@@ -1,0 +1,18 @@
+# CI-MINIMAL skip-set contract (SPEC-CI-MINIMAL-2026-10-13, hardened per
+# operator review 2026-10-13): the exact set of tests the harness skips in the
+# published-parent bare layout (no docker/jq/kubectl on PATH, no repo .venv).
+# Identifiers are the pytest -rs short-summary locations (file:line, relative
+# to stanok/). The workflow diffs the actual SKIPPED set against this list:
+# a substitution (one skip out, another in) fails CI even at count 10.
+# Line numbers follow the pinned stanok commit; if a test file is edited and a
+# location moves, CI goes red and this list must be updated deliberately.
+launcher/tests_harness/test_doctor.py:118
+launcher/tests_harness/test_doctor.py:123
+launcher/tests_harness/test_doctor.py:131
+launcher/tests_harness/test_doctor.py:156
+launcher/tests_harness/test_doctor.py:169
+launcher/tests_harness/test_doctor.py:276
+launcher/tests_harness/test_runsh_contract.py:195
+launcher/tests_harness/test_runsh_contract.py:205
+launcher/tests_harness/test_runsh_py_stack.py:66
+launcher/tests_harness/test_ticket_zone.py:224

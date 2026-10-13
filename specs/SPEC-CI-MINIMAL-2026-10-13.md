@@ -51,6 +51,19 @@ behavior change, not protection); it protects the harness contract itself.
    stanok/image-requirements.lock` (pip-native: uv-compiled, sha256-hashed)
    → run pytest with a PATH filtered of docker/jq/kubectl → assert rc=0 AND
    exactly 10 skipped. A changed skip count (up OR down) fails CI.
+6. **Contract hardening (operator review 2026-10-13).** The count alone can be
+   satisfied by a substitution (one skip out, another in); the contract is now
+   the exact SET of skipped tests: pytest runs with `-rs`, the workflow
+   extracts the short-summary locations (`file:line`, relative to `stanok/`)
+   and diffs them against `.github/ci-expected-skips.txt` (10 identifiers,
+   measured in the bare parent layout); the count check is kept as secondary.
+   Runner pinned to `ubuntu-24.04` (`ubuntu-latest` moves to Ubuntu 26 on
+   2026-10-19 — the skip set must not drift under the contract);
+   `actions/checkout@v7` + `actions/setup-python@v7` (both `node24` runtimes,
+   verified in their `action.yml`); explicit preflight step
+   `python3 -m pytest --version` (the run.sh tests call `python3 -m pytest` —
+   a missing pytest must fail loudly before the suite, not as 9 runner
+   failures).
 
 ## Layout verification (measured 2026-10-13)
 
@@ -64,6 +77,20 @@ behavior change, not protection); it protects the harness contract itself.
   `.gitmodules`): guard SKIPS with reason "not this project's parent".
 - Local full harness with all tools present: 433 passed, 0 failed (no
   regression from the guards).
+- Actions run `38400431043` (job log): `423 passed, 10 skipped in 32.50s`,
+  `pytest rc=0`, `skipped=10 (expected exactly 10)` — the runner count matches
+  the contract.
+- Operator reproduction reconciliation (2026-10-13): the operator's bare run
+  gave 424/9 — the one-test delta is `test_runsh_py_stack.py:66`
+  (`test_I6_host_interpreter_is_pinned`): the operator's sandbox created a
+  repo `.venv` symlink (so I6 runs and passes); the CI layout has no repo
+  `.venv` (deps go to the setup-python interpreter), so I6 skips — the 10th.
+  The full 10-skip set (captured with `-rs` in the same layout):
+  `test_doctor.py:118/123/131` (docker), `test_doctor.py:156/169` (kubectl —
+  zone-absent skip fires before the which-check), `test_doctor.py:276`
+  (CONTEXT.md absent), `test_runsh_contract.py:195/205` (jq),
+  `test_runsh_py_stack.py:66` (no repo .venv), `test_ticket_zone.py:224`
+  (docker, pre-existing guard).
 6. **Division (operator 2026-10-13):** agent — R1..R5 implementation,
    bare-run proof, publication (origin+github), RA-3 closure record,
    STATUS.md section, link to a green Actions run. Operator — fresh clone,
