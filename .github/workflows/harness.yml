@@ -1,0 +1,65 @@
+# SPEC-CI-MINIMAL (specs/SPEC-CI-MINIMAL-2026-10-13.md): the harness
+# (stanok/launcher/tests_harness) must run green on a bare runner — no
+# k8s cluster, no docker, no jq, no repo .venv. The contract is the exact
+# skip count: the environment probes skip with reasons (skip-guards in the
+# tests), and ANY change of the count (up or down) fails CI.
+# The workflow lives in the PARENT repo: the guard test
+# test_supervisor_zone_not_published needs the published-parent layout
+# (parent checkout + stanok submodule) — a stanok-only CI cannot run it.
+name: harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout parent + stanok submodule
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python 3.11 (image-requirements.lock resolution)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned deps (uv-compiled, sha256-hashed lock)
+        run: python -m pip install -r stanok/image-requirements.lock
+
+      - name: Run harness in a bare environment (docker/jq/kubectl hidden)
+        run: |
+          set -euo pipefail
+          # PATH farm: every executable from the runner PATH except the three
+          # tools the bare contract hides — the skip-guards fire on
+          # shutil.which() == None. First occurrence wins; non-executables
+          # and dangling links are skipped.
+          FARM="$RUNNER_TEMP/barepath"
+          mkdir -p "$FARM"
+          IFS=:
+          for d in $PATH; do
+            [ -d "$d" ] || continue
+            for t in "$d"/*; do
+              [ -x "$t" ] || continue
+              n="${t##*/}"
+              case "$n" in docker|docker.io|docker-compose|jq|kubectl) continue ;; esac
+              [ -e "$FARM/$n" ] || [ -L "$FARM/$n" ] || ln -s "$t" "$FARM/$n" 2>/dev/null || true
+            done
+          done
+          unset IFS
+          export PATH="$FARM"
+          cd stanok
+          rc=0
+          python -m pytest launcher/tests_harness -q 2>&1 | tee "$GITHUB_WORKSPACE/pytest.log" || rc=$?
+          echo "pytest rc=$rc"
+          skipped=$(grep -oE '[0-9]+ skipped' "$GITHUB_WORKSPACE/pytest.log" | tail -1 | grep -oE '[0-9]+' || echo 0)
+          echo "skipped=$skipped (expected exactly 10)"
+          if [ "$rc" -ne 0 ] || [ "$skipped" -ne 10 ]; then
+            echo "::error::harness contract violated: rc=$rc, skipped=$skipped (expected rc=0, exactly 10 skipped)"
+            exit 1
+          fi
