@@ -172,7 +172,7 @@ for f in "${top_sync[@]}"; do
     [[ "$f" == *.sh ]] && chmod +x "$f"
   fi
 done
-for f in CONTEXT.md specs/STATUS.md specs/RISK-ACCEPTANCES.md specs/ARCHIVE tickets/TASK-*.md specs/AUDIT-*.md specs/REDTEAM-*.md specs/REVIEW-*.md specs/VERIFY-*.md; do
+for f in CONTEXT.md specs/STATUS.md specs/RISK-ACCEPTANCES.md specs/ARCHIVE tickets/TASK-*.md specs/AUDIT-*.md specs/REDTEAM-*.md specs/REVIEW-*.md specs/VERIFY-*.md specs/ANALYSIS-*.md; do
   [[ -e "$f" ]] && git rm -q -- "$f"
 done
 for f in "${top_rem[@]}"; do
