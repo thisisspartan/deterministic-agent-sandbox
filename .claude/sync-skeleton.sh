@@ -17,10 +17,18 @@
 # test_supervisor_zone_not_published (doctor) fails if the parent ever tracks
 # them. test_context_md_budget skips when CONTEXT.md is absent (public clone).
 #
+# The mirror is LOCAL-ONLY by default (fixed 2026-10-13): the parent pushes its
+# own published commits to GitHub, and the skeleton's sync/removal commits
+# intentionally diverge from that history (DST shares the GitHub repo with the
+# parent; the submodule copy of infra over an older pin is a sibling commit,
+# not a descendant) — every push was rejected (incident 2026-10-13: parallel
+# submodule commit e54f014, push rejected). Push is opt-in (--push) for the
+# bootstrap case only.
+#
 # Usage:
 #   ./sync-skeleton.sh --diff          # preview: show what would change, no changes made
-#   ./sync-skeleton.sh                 # apply: sync + commit + push
-#   ./sync-skeleton.sh --no-push       # apply: sync + commit, no push
+#   ./sync-skeleton.sh                 # apply: sync + commit (local only)
+#   ./sync-skeleton.sh --push          # apply + push (bootstrap only; usually rejected)
 #
 set -euo pipefail
 shopt -s nullglob
@@ -28,11 +36,12 @@ shopt -s nullglob
 SRC="${SRC:-$(git rev-parse --show-toplevel)}"
 DST="${DST:-/home/hermes/skeleton-pub}"
 DST_STANOK="$DST/stanok"
-PUSH=1
+PUSH=0
 MODE="apply"
 for arg in "$@"; do
   case "$arg" in
-    --no-push) PUSH=0 ;;
+    --push)    PUSH=1 ;;
+    --no-push) PUSH=0 ;;  # accepted for compatibility; it is the default now
     --diff)    MODE="diff" ;;
   esac
 done
@@ -203,8 +212,8 @@ if (( PUSH )); then
   echo "[4/4] push"
   git -C "$DST_STANOK" push origin main
   git -C "$DST" push origin main
-  echo "OK: skeleton-pub synced + pushed"
+  echo "OK: skeleton-pub synced + pushed (--push: bootstrap only)"
 else
-  echo "[4/4] push skipped (--no-push)"
+  echo "[4/4] push skipped (default: the mirror is local-only; --push for bootstrap)"
   echo "OK: skeleton-pub synced (local only)"
 fi
