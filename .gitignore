@@ -2,3 +2,9 @@
 .stanok-logs/
 *.launch.log
 /.claude/settings.local.json
+
+# supervisor zone: local-only, NEVER published (rule: .claude/sync-skeleton.sh;
+# pinned by test_supervisor_zone_not_published in stanok/launcher/tests_harness)
+CONTEXT.md
+specs/STATUS.md
+specs/RISK-ACCEPTANCES.md
