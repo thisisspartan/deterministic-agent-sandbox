@@ -9,6 +9,10 @@ CONTEXT.md
 specs/STATUS.md
 specs/RISK-ACCEPTANCES.md
 specs/ARCHIVE/
+# tickets: private (operator decision 2026-10-13) — the machine reads them from
+# this local directory; untracked from the public tree (history NOT rewritten —
+# old commits keep them; RA-7 covers the LAN addresses they contain)
+tickets/
 # analysis/audit records: local-only (enforced by gitignore + the removal loop
 # in sync-skeleton; untracked 2026-10-13, history NOT rewritten — content is
 # internal but harmless)
