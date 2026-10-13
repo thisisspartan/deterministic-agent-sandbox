@@ -47,6 +47,22 @@ RuntimeClass. Доступно супервизору без root.
 Копировать `evidence/<label>/` ДО `git worktree remove --force` —
 summary.json живёт в worktree (урок verify-registry2).
 
+## Публикация: кто и откуда публикует (ручная, из main checkout)
+
+Урок 2026-10-13 (инцидент sync-skeleton `e54f014`): зеркало `skeleton-pub` делит
+тот же публичный репозиторий, что и `github`-remote родителя; его sync/removal-коммиты —
+параллельные (sibling) коммиты к истории родителя (копия infra поверх старого пина), поэтому push зеркала
+всегда отвергается.
+
+Процедура (ручная, только из main checkout):
+1. Патч машины lands в `stanok/` (main checkout) → оператор/супервизор пушит
+   `stanok/` в origin и github.
+2. Родитель обновляет пин submodule в main checkout → коммит → push origin+github.
+3. `sync-skeleton.sh` по умолчанию local-only: пересобирает зеркало `skeleton-pub`
+   локально и НЕ пушит; `--push` — только для bootstrap (первое создание скелета).
+   `skeleton-pub` — зеркало, расходится с GitHub по дизайну и НЕ является источником
+   истины для push.
+
 ## Правила переписывания истории (git filter-repo)
 
 Урок 2026-10-13 (P2 публикации): карта `--replace-text` с пробелами вокруг `==>`
