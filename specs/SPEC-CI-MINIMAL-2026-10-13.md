@@ -80,6 +80,10 @@ behavior change, not protection); it protects the harness contract itself.
 - Actions run `38400431043` (job log): `423 passed, 10 skipped in 32.50s`,
   `pytest rc=0`, `skipped=10 (expected exactly 10)` — the runner count matches
   the contract.
+- Hardened-contract run `38412209632` (head_sha `a0bf168`, job
+  `115347169123`, success): preflight `pytest 8.3.3`; the log carries the full
+  SKIPPED list (10, identical to `.github/ci-expected-skips.txt` — the diff
+  passed); `423 passed, 10 skipped in 32.34s`, `pytest rc=0`.
 - Operator reproduction reconciliation (2026-10-13): the operator's bare run
   gave 424/9 — the one-test delta is `test_runsh_py_stack.py:66`
   (`test_I6_host_interpreter_is_pinned`): the operator's sandbox created a
