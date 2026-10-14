@@ -69,3 +69,17 @@ the procedure already followed, e.g. `c8c7bab`):
 Division of documents: this README = the process (normative); `CONTEXT.md` =
 the log of each actual release; `specs/` = requirements and accepted
 decisions only.
+
+## Verifying this project from the outside
+
+External audits must fix a SHA (pin or HEAD) before checking anything: verify
+against GitHub API contents + raw files at that SHA, never HTML pages or
+cached snippets (directory listings are not crawlable; mixing snippets of
+different dates produces era-confused conclusions).
+
+What the public `stanok/README.md` documents is the mechanism, not the
+deployment: the default `STANOK_SERVER_URL=http://127.0.0.1:8080` is public,
+but the inference host and Opik IPs are not hardcoded in public files — they
+come from the environment. The supervisor layer (ticket-level retries,
+stop-conditions) is described in this repo's `CLAUDE.supervisor.md`, not in
+the stanok README.
