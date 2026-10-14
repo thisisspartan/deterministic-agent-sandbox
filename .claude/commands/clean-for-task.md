@@ -14,19 +14,23 @@ artifacts, keep all infrastructure. Work in whatever repo you are invoked in.
 ## 2. Identify what to clean — do NOT delete yet
 Collect the exact file list, grouped by category, with full paths:
 - **Code** (machine-generated): `src/*`, `tests/*`, `docs/*` — keep each dir's `.gitkeep`.
-- **Run artifacts**: `evidence/`, `__pycache__/`, `.venv/`, `*.log`.
+- **Run artifacts**: contents of `evidence/`, `__pycache__/`, `*.log`.
   (Run logs live OUTSIDE the repo in `/tmp/stanok-logs` — nothing to clean in-repo.)
+  `.venv/` is NOT a clean target: gitignored, but the host launcher runs from
+  `stanok/.venv` — deleting it breaks the next launch until `setup.sh` re-runs.
 - **Project history** (optional, for a full reset): `tickets/TASK-*.md`, `specs/STATUS.md`
   rows, `specs/AUDIT-*.md`, `specs/REDTEAM-*.md`, `specs/REVIEW-*.md`, `specs/VERIFY-*.md`.
+  These are LOCAL-ONLY (gitignored since the 2026-10-13 privatization) — enumerate with
+  `ls tickets/ specs/`, not git; delete with `rm` (no `git rm`).
 
-Use `git ls-files` (tracked) + `git status --porcelain` (untracked) to build the list.
+Use `git ls-files` (tracked) + `git status --porcelain` (untracked) for git-visible
+targets; for gitignored local-only files use direct directory listing.
 
-**Sandbox-referenced paths (CC-157):** read each submodule's
-`.claude/settings.stanok.json` → `sandbox.filesystem` `denyWrite`/`denyRead`
-entries, resolve them against that submodule's `.claude/` dir (a `../x`
-entry means `<submodule>/x`). Any clean target that is (or contains) a
-resolved deny path MUST be marked `[sandbox-referenced]` in the grouped
-list — deleting it breaks the W7 launch gate (rc=28) until it is recreated.
+**Evidence directory (rc=28):** the launch gate requires `<submodule>/evidence/` to
+EXIST — a missing directory aborts the next launch with rc=28. Clean the CONTENTS
+of `evidence/`, never the directory itself; if it was removed, `mkdir -p` it back.
+(The old CC-157 sandbox-referenced scan is removed: `settings.stanok.json` has no
+`sandbox.filesystem` deny entries — the Pod runs unsandboxed.)
 
 **Show the user the grouped list with paths before doing anything.**
 
@@ -42,18 +46,23 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 - Tracked files: `git rm -q -- <path>`.
 - Untracked files/dirs: `rm -rf <path>`.
 - Always keep `.gitkeep` in `src/`, `tests/`, `docs/` so the directories survive.
-- **After** deletion, recreate every `[sandbox-referenced]` path that was
-  removed (`mkdir -p <resolved path>`) so the W7 gate (rc=28) still passes
-  (CC-157). Verify with a re-read of `settings.stanok.json` deny entries.
+- **After** deleting the contents of `evidence/`, ensure the directory exists:
+  `mkdir -p <submodule>/evidence` (the launch gate requires it, rc=28).
 
-## 5. Commit (submodule first, then parent)
+## 5. Commit (submodule first; parent pin discipline)
 - If a submodule was cleaned: `git -C <sub> add -A && git -C <sub> commit -m "chore: clean for new task — infra only"` (the `chore:` prefix is a maintenance convention only — no git hook enforces it).
-- In the parent: `git add -A` (picks up the gitlink + root changes) and commit with the same message.
+- Parent root changes (if any): a separate commit.
+- The gitlink bump is NEVER mixed into another commit: it is a single-purpose
+  `chore: pin stanok <sha> — <reason>` per the parent README section "Releasing a
+  Stanok version" — and the submodule is pushed to BOTH remotes before the parent
+  carrying the new pin is pushed. Leaving the parent dirty (` M stanok`) until the
+  release is the normal pre-publish state, not a defect.
 - Show the final `git status --porcelain`. Ask before committing if the user prefers not to.
 
 ## Never delete (infrastructure — always keep)
-`launcher/`, `hooks/`, `scripts/`, `launch.sh`, `setup.sh`,
-`requirements.txt`, `CONTEXT.md`, `CLAUDE.supervisor.md`, `CLAUDE.md`, `Dockerfile`,
+`launcher/`, `hooks/`, `scripts/`, `k8s/`, `infra/`, `launch.sh`, `setup.sh`,
+`requirements.txt`, `image-requirements.lock`, `ARCHITECTURE.md`, `.venv/`,
+`CONTEXT.md`, `CLAUDE.supervisor.md`, `CLAUDE.md`, `Dockerfile`,
 `README.md`, `opik-traces.py`, `patches/`, `P0-launch.sh`, `.gitmodules`,
 `.gitignore`, `.claude/`, `tickets/.gitkeep`, `specs/.gitkeep`,
 and every `.gitkeep` file.
