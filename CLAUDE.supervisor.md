@@ -36,6 +36,13 @@ Verify facts with commands, not from memory.
      `impl: scripts/run.sh` when it exists → rc=13, CC-133).
    - test-file naming per the stack registry: py → `tests/**/*_test.py`,
      js → `tests/**/*.test.js` (other names are unclaimed → gate rc=1/rc=2).
+   - G4 acceptance contract (`specs/SPEC-G4-ACCEPTANCE-CONTRACT-2026-10-14.md`):
+     an `accept: <path>` line declares a TRUSTED acceptance check — must
+     pre-exist under `tests/` (author it host-side), stays immutable via the
+     contract lock, is not a deliverable (never `impl:`/`test:`/`edit:` the
+     same path); `accept: none` declares their absence explicitly. Behavior-
+     changing tickets should declare acceptance scenarios BEFORE launch;
+     invalid/contradictory accept lines → rc=13.
 
 ## 2. Gate before launching the machine (strictly synchronous)
 
