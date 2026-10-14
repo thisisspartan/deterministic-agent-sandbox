@@ -45,3 +45,27 @@ stanok/                 — the machine (git submodule)
 Full pipeline discipline: `CLAUDE.supervisor.md` §3. Machine internals
 (setup, running, env table): `stanok/README.md`; architecture (call chain,
 module map): `stanok/ARCHITECTURE.md`.
+
+## Releasing a Stanok version
+
+The parent pins a specific stanok commit, never a floating `main`. Publishing
+a new version is a controlled four-step release (no new mechanism — this is
+the procedure already followed, e.g. `c8c7bab`):
+
+1. **Candidate check.** `git -C stanok status --porcelain` is empty;
+   `git -C stanok log --oneline origin/main..main` contains ONLY commits
+   whose verdict was accepted — for each, `stanok/evidence/<label>/summary.json`
+   shows `rc=0`, `verifier=PASS`.
+2. **Publish stanok.** Push `main` to BOTH remotes (`origin` and `github`).
+   A parent pin must point at an object reachable from the public remote, or
+   `git clone --recurse-submodules` breaks for external users.
+3. **Pin commit in the parent.** `git add stanok`, verify the staged range
+   with `git diff --cached --submodule=log` (exactly the intended commits),
+   commit as a single-purpose `chore: pin stanok <sha> — <reason + evidence
+   label>`, push to both remotes.
+4. **Record.** Dated entry in `CONTEXT.md` (the supervisor log; transcripts
+   are not memory).
+
+Division of documents: this README = the process (normative); `CONTEXT.md` =
+the log of each actual release; `specs/` = requirements and accepted
+decisions only.
