@@ -6,12 +6,12 @@
 # a substitution (one skip out, another in) fails CI even at count 10.
 # Line numbers follow the pinned stanok commit; if a test file is edited and a
 # location moves, CI goes red and this list must be updated deliberately.
-launcher/tests_harness/test_doctor.py:118
-launcher/tests_harness/test_doctor.py:123
-launcher/tests_harness/test_doctor.py:131
-launcher/tests_harness/test_doctor.py:156
-launcher/tests_harness/test_doctor.py:169
-launcher/tests_harness/test_doctor.py:276
+launcher/tests_harness/test_doctor.py:133
+launcher/tests_harness/test_doctor.py:138
+launcher/tests_harness/test_doctor.py:146
+launcher/tests_harness/test_doctor.py:171
+launcher/tests_harness/test_doctor.py:184
+launcher/tests_harness/test_doctor.py:291
 launcher/tests_harness/test_runsh_contract.py:195
 launcher/tests_harness/test_runsh_contract.py:205
 launcher/tests_harness/test_runsh_py_stack.py:66
