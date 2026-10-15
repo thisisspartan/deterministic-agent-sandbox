@@ -1,0 +1,6 @@
+# out-of-tree patch provenance (CC-153) is local-only: PATCHES.md pins the
+# llama.cpp build on the LAN server (internal addresses) — operator decision
+# 2026-10-15: the public repo is a clean infra mirror. The folder placeholder
+# stays tracked so the CC-153 convention (patches live here) survives.
+*
+!.gitignore

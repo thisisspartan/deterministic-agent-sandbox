@@ -1,9 +1,0 @@
-profile bad {
-  mount options=(bind) /tmp/newroot -> /tmp/newroot,
-  mount options=(bind,rbind) /oldroot/** -> /newroot/**,
-  mount fstype=tmpfs tmpfs -> /tmp/,
-  mount options=(bind,ro) /newroot/proc/** -> /newroot/proc/**,
-  mount options=(rw rbind) /oldroot/ -> /newroot/,
-  remount /newroot/{,**},
-  umount /,
-}

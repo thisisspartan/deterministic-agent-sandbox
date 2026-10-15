@@ -1,9 +1,0 @@
-#include <tunables/global>
-profile x1a-syntax-probe5 flags=(attach_disconnected,mediate_deleted) {
-  network,
-  capability,
-  /** px -> x1a-syntax-other5,
-}
-profile x1a-syntax-other5 flags=(attach_disconnected,mediate_deleted) {
-  #include <abstractions/base>
-}

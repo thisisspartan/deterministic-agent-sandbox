@@ -18,3 +18,13 @@ tickets/
 # public clone (test_doctor.py reads REPO_ROOT.parent/specs/STACKS.md).
 specs/*
 !specs/STACKS.md
+# archive/: research history (apparmor-spike artifacts, vendored sources) —
+# local-only, untracked 2026-10-15 (operator decision: the public repo is a
+# clean infra mirror; history NOT rewritten). No placeholder — the folder
+# itself is not infrastructure.
+archive/
+# patches/: out-of-tree patch provenance (CC-153) — content local-only
+# (PATCHES.md pins the llama.cpp build on the LAN server, internal addresses);
+# the folder stays in the public tree via the patches/.gitignore placeholder
+patches/*
+!patches/.gitignore

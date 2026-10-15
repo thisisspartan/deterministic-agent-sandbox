@@ -24,8 +24,9 @@ P0-launch.sh            — interactive Claude Code -> local llama-server
                           session entry point (env-configurable, no repo paths)
 opik-traces.py          — (darkcast-specific) Opik trace-diagnosis helper
                           (client-side filter, CC-159)
-patches/                — (darkcast-specific) llama-server patches (see
-                          patches/PATCHES.md)
+patches/                — (darkcast-specific) out-of-tree patch provenance
+                          (CC-153); content local-only, the public tree keeps
+                          the folder placeholder only
 stanok/                 — the machine (git submodule)
 ```
 

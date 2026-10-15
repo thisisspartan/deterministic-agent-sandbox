@@ -9,11 +9,13 @@
 # project history (tickets, review/audit docs, evidence) are NEVER copied.
 # specs/STACKS.md IS synced: it documents the stack manifests (infra) and must
 # match the live registry — the CC-147 doctor test runs green in the public clone.
-# Supervisor-zone files (CONTEXT.md, tickets/, and ALL of specs/ except the
-# infra doc specs/STACKS.md) are NEVER copied — they are project history, not
-# infrastructure (operator decision 2026-10-15: the public repo is a clean
-# infra mirror; specs/ there is limited to STACKS.md, pinned by the CC-147
-# doctor test). ENFORCED at three points: the parent gitignores them
+# Supervisor-zone / history files (CONTEXT.md, tickets/, archive/, and ALL of
+# specs/ and patches/ except the infra doc specs/STACKS.md and the
+# patches/.gitignore folder placeholder) are NEVER copied — they are project
+# history, not infrastructure (operator decision 2026-10-15: the public repo
+# is a clean infra mirror; specs/ there is limited to STACKS.md, pinned by
+# the CC-147 doctor test; patches/ keeps only the placeholder). ENFORCED at
+# three points: the parent gitignores them
 # (local-only zone; history NOT rewritten — same policy as tickets/); any
 # tracked supervisor-zone path in DST is removed on every sync (see the
 # removal loop in [2/4]); test_supervisor_zone_not_published (doctor) fails if
@@ -111,7 +113,7 @@ done
 # stale pre-split relic (399 lines, --background/PreToolUse-deny) that no sync
 # ever updated. The darkcast root README is the control-room template; its
 # darkcast-only entries are marked as such inline.
-top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md specs/STACKS.md)
+top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md specs/STACKS.md patches/.gitignore)
 mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
 top_sync+=("${claude_files[@]}")
 top_add=(); top_mod=(); top_rem=()
@@ -185,16 +187,18 @@ for f in "${top_sync[@]}"; do
   fi
 done
 # Removal loop (generic, operator decision 2026-10-15): every tracked
-# supervisor-zone path in DST is removed on every sync — CONTEXT.md, tickets/,
-# and ANYTHING under specs/ except the infra doc specs/STACKS.md (CC-147).
-# The old hardcoded glob list (STATUS/RISK-ACCEPTANCES/ARCHIVE/AUDIT/REDTEAM/
-# REVIEW/VERIFY/ANALYSIS) missed SPEC-*/PLAN-*/NOTE-* — the public specs/ was
-# polluted by the parent's own pushes, not by this script. git ls-files lists
+# supervisor-zone / history path in DST is removed on every sync — CONTEXT.md,
+# tickets/, archive/, and ANYTHING under specs/ or patches/ except the two
+# public exceptions: the infra doc specs/STACKS.md (CC-147) and the
+# patches/.gitignore folder placeholder. The old hardcoded glob list
+# (STATUS/RISK-ACCEPTANCES/ARCHIVE/AUDIT/REDTEAM/REVIEW/VERIFY/ANALYSIS)
+# missed SPEC-*/PLAN-*/NOTE-*, patches/ and archive/ — the public pollution
+# came from the parent's own pushes, not from this script. git ls-files lists
 # only tracked paths: safe under set -e, no-op when already clean.
 while IFS= read -r f; do
-  [[ "$f" == specs/STACKS.md ]] && continue
+  [[ "$f" == specs/STACKS.md || "$f" == patches/.gitignore ]] && continue
   git rm -q -- "$f"
-done < <(git ls-files CONTEXT.md tickets specs/)
+done < <(git ls-files CONTEXT.md tickets specs/ archive/ patches/)
 for f in "${top_rem[@]}"; do
   git rm -q -- "$f"
 done
