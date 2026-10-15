@@ -67,6 +67,15 @@ the procedure already followed, e.g. `c8c7bab`):
 4. **Record.** Dated entry in `CONTEXT.md` (the supervisor log; transcripts
    are not memory).
 
+Machine payload cleanup (operator decision 2026-10-15): the ticket-generated
+payload in `src/`, `tests/`, `docs/` is validation material, not product —
+after a ticket is DONE and validated, remove it from the tree (`git rm`,
+keep the `.gitkeep` placeholders: the directories must exist) before the
+release push, so the public stanok HEAD carries infrastructure only. History
+is NOT rewritten (same policy as `specs/`/`tickets/`). Exception:
+`tests/runtime_contract_test.py` + `docs/runtime-contract.md` are the
+runtime-contract guard (CC-261) and a harness dependency — they stay tracked.
+
 Division of documents: this README = the process (normative); `CONTEXT.md` =
 the log of each actual release; `specs/` = requirements and accepted
 decisions only.
