@@ -9,13 +9,16 @@
 # project history (tickets, review/audit docs, evidence) are NEVER copied.
 # specs/STACKS.md IS synced: it documents the stack manifests (infra) and must
 # match the live registry — the CC-147 doctor test runs green in the public clone.
-# Supervisor-zone files (CONTEXT.md, specs/STATUS.md, specs/RISK-ACCEPTANCES.md
-# and their archives specs/ARCHIVE/*) are NEVER copied — they are project
-# history, not infrastructure. ENFORCED at three points: the parent gitignores
-# them (local-only zone, history rewritten 2026-10-13); any of these paths
-# present in DST is removed on every sync (see the removal loop in [2/4]);
-# test_supervisor_zone_not_published (doctor) fails if the parent ever tracks
-# them. test_context_md_budget skips when CONTEXT.md is absent (public clone).
+# Supervisor-zone files (CONTEXT.md, tickets/, and ALL of specs/ except the
+# infra doc specs/STACKS.md) are NEVER copied — they are project history, not
+# infrastructure (operator decision 2026-10-15: the public repo is a clean
+# infra mirror; specs/ there is limited to STACKS.md, pinned by the CC-147
+# doctor test). ENFORCED at three points: the parent gitignores them
+# (local-only zone; history NOT rewritten — same policy as tickets/); any
+# tracked supervisor-zone path in DST is removed on every sync (see the
+# removal loop in [2/4]); test_supervisor_zone_not_published (doctor) fails if
+# the parent tracks the core state files. test_context_md_budget skips when
+# CONTEXT.md is absent (public clone).
 #
 # The mirror is LOCAL-ONLY by default (fixed 2026-10-13): the parent pushes its
 # own published commits to GitHub, and the skeleton's sync/removal commits
@@ -181,9 +184,17 @@ for f in "${top_sync[@]}"; do
     [[ "$f" == *.sh ]] && chmod +x "$f"
   fi
 done
-for f in CONTEXT.md specs/STATUS.md specs/RISK-ACCEPTANCES.md specs/ARCHIVE tickets/TASK-*.md specs/AUDIT-*.md specs/REDTEAM-*.md specs/REVIEW-*.md specs/VERIFY-*.md specs/ANALYSIS-*.md; do
-  [[ -e "$f" ]] && git rm -q -- "$f"
-done
+# Removal loop (generic, operator decision 2026-10-15): every tracked
+# supervisor-zone path in DST is removed on every sync — CONTEXT.md, tickets/,
+# and ANYTHING under specs/ except the infra doc specs/STACKS.md (CC-147).
+# The old hardcoded glob list (STATUS/RISK-ACCEPTANCES/ARCHIVE/AUDIT/REDTEAM/
+# REVIEW/VERIFY/ANALYSIS) missed SPEC-*/PLAN-*/NOTE-* — the public specs/ was
+# polluted by the parent's own pushes, not by this script. git ls-files lists
+# only tracked paths: safe under set -e, no-op when already clean.
+while IFS= read -r f; do
+  [[ "$f" == specs/STACKS.md ]] && continue
+  git rm -q -- "$f"
+done < <(git ls-files CONTEXT.md tickets specs/)
 for f in "${top_rem[@]}"; do
   git rm -q -- "$f"
 done

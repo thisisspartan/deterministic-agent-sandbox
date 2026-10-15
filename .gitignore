@@ -6,14 +6,15 @@
 # supervisor zone: local-only, NEVER published (rule: .claude/sync-skeleton.sh;
 # pinned by test_supervisor_zone_not_published in stanok/launcher/tests_harness)
 CONTEXT.md
-specs/STATUS.md
-specs/RISK-ACCEPTANCES.md
-specs/ARCHIVE/
 # tickets: private (operator decision 2026-10-13) — the machine reads them from
 # this local directory; untracked from the public tree (history NOT rewritten —
 # old commits keep them; RA-7 covers the LAN addresses they contain)
 tickets/
-# analysis/audit records: local-only (enforced by gitignore + the removal loop
-# in sync-skeleton; untracked 2026-10-13, history NOT rewritten — content is
-# internal but harmless)
-specs/ANALYSIS-*.md
+# specs/: the supervisor's working zone (SPEC-*/PLAN-*/REVIEW-*/NOTE-*/RUNBOOK/
+# STATUS/RISK-ACCEPTANCES/ARCHIVE/ANALYSIS-*) — local-only, untracked 2026-10-15
+# (operator decision: the public repo is a clean infra mirror; history NOT
+# rewritten — same policy as tickets/). The ONLY specs/ file that stays tracked
+# is specs/STACKS.md: the infra doc pinned by the CC-147 doctor test in the
+# public clone (test_doctor.py reads REPO_ROOT.parent/specs/STACKS.md).
+specs/*
+!specs/STACKS.md
