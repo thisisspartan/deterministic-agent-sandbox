@@ -189,6 +189,15 @@ a verdict class needs the cause.
   the ticket; relaunch refined as `<label>-retry1` (counts toward the
   3-attempt limit).
 
+### Test semantics review (before commit, operator decision 2026-10-15)
+
+A green verifier proves the tests pass, not that they test the ticket. Before
+the operator commits/pushes a batch of DONE tickets, the supervisor presents a
+test-semantics review: `git -C /home/hermes/darkcast/stanok diff HEAD -- tests/`
+against the acceptance criteria of each `specs/SPEC-<slug>.md` — one line per
+ticket: covered / gap. The operator's approval gates the commit. This does NOT
+pause the ticket loop (DONE marking and the next ticket proceed as above).
+
 ## 4. Stop conditions (call a human)
 
 ONLY:

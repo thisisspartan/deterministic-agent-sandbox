@@ -53,6 +53,20 @@ The typed contract between cli.js and the remote template
   control silently breaks — this file is the in-repo record of the
   coupling.
 
+## cli.js line: `STANOK_TEMP` → request temperature (CC-266, 2026-10-15)
+
+- **Target:** the pinned cli.js (`~/git/claude-code-2.1.88/cli.js`, branch
+  `base`, HEAD `c306331`) — out-of-tree patch, not in this repo's tree.
+- **What it does:** non-thinking API requests send `temperature =
+  parseFloat(process.env.STANOK_TEMP)` (default 1) instead of the hardcoded
+  `temperature: 1`. Introduced in `09fc14f` (2026-09-24), verified there via
+  mock capture (`STANOK_TEMP=0.2` → request body `temperature=0.2`).
+- **Live contract:** `stanok/.claude/settings.stanok.json` env
+  `STANOK_TEMP = "0.0"` (operator decision 2026-09-29: greedy decoding for
+  the machine). `parseFloat("0.0")` is safe — no falsy branch.
+- **Status:** documented, not re-applied here — the consumer is the patched
+  cli.js outside the repo; no code change in darkcast/stanok.
+
 ## FINDING (2026-09-25, for the operator)
 
 The **currently running** server (binary built 2026-09-22 10:39, process
