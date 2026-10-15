@@ -117,8 +117,8 @@ reads (`/tmp/claude-*`, `.output`, `.launch.log`), no repeated polling across
 turns — each supervisor request against the local server evicts the machine's
 KV cache. The single background `--follow` task is the entire wait.
 
-If the wait exits rc=124 (cap reached): run `launch.sh status <label>`; if still
-running, `launch.sh stop <label>`.
+If the wait exits rc=124 (45-min cap): run `launch.sh status <label>`; if
+still running, `launch.sh stop <label>`.
 If `dead` or `missing` (no summary.json): the process died without reporting —
 read the last 30 lines of `/tmp/stanok-logs/<label>.launch.log`.
 
