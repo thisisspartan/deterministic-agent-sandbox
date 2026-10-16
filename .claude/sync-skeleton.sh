@@ -26,6 +26,15 @@
 # the published template is .mcp.json.example. CLAUDE.supervisor.md is copied
 # RENDERED, never verbatim: render_role_file replaces the SRC root with the
 # placeholder <project-root>/ so the mirror carries no machine-local paths.
+# hooks/stanok-post-commit IS synced (review C5, 2026-10-17): the auto-pin
+# hook is part of the required behavior of a public skeleton (a parent with a
+# stanok submodule must keep its gitlink current). Canonical location: the
+# parent's hooks/ directory (versioned); the hook derives parent and
+# submodule-relative path from the layout (no machine-local paths) and is a
+# no-op outside a superproject/main. Installing it as
+# stanok/.git/hooks/post-commit (symlink) is local setup, not synced —
+# .git/ is not a tracked path. Pinned by test_sync_skeleton.py: the hook
+# survives repeated syncs.
 #
 # The mirror is LOCAL-ONLY by default (fixed 2026-10-13): the parent pushes its
 # own published commits to GitHub, and the skeleton's sync/removal commits
@@ -133,7 +142,7 @@ done
 # .mcp.json is NOT synced (local-only, gitignored — machine-local absolute
 # paths); .mcp.json.example is the published portable template.
 # CLAUDE.supervisor.md is synced RENDERED (render_role_file), never verbatim.
-top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md .mcp.json.example specs/STACKS.md patches/.gitignore)
+top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md .mcp.json.example specs/STACKS.md patches/.gitignore hooks/stanok-post-commit)
 mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
 top_sync+=("${claude_files[@]}")
 top_add=(); top_mod=(); top_rem=()
@@ -211,7 +220,9 @@ for f in "${top_sync[@]}"; do
     else
       cp "$SRC/$f" "$f"
     fi
-    [[ "$f" == *.sh ]] && chmod +x "$f"
+    # the hook has no .sh suffix but must stay executable (git tracks the
+    # exec bit; a non-exec hook is silently never run by git).
+    [[ "$f" == *.sh || "$f" == hooks/stanok-post-commit ]] && chmod +x "$f"
   fi
 done
 # Removal loop (generic, operator decision 2026-10-15): every tracked
