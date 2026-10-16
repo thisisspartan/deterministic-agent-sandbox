@@ -26,9 +26,10 @@ Collect the exact file list, grouped by category, with full paths:
 Use `git ls-files` (tracked) + `git status --porcelain` (untracked) for git-visible
 targets; for gitignored local-only files use direct directory listing.
 
-**Evidence directory (rc=28):** the launch gate requires `<submodule>/evidence/` to
-EXIST — a missing directory aborts the next launch with rc=28. Clean the CONTENTS
-of `evidence/`, never the directory itself; if it was removed, `mkdir -p` it back.
+**Evidence directory:** the launcher creates `evidence/<label>/` itself
+(`launcher/cli.py:90`, `os.makedirs(..., exist_ok=True)`) — no launch gate depends
+on the directory existing (the old rc=28 claim is obsolete: no such code in
+`launcher/exitcodes.py`). Cleaning the CONTENTS of `evidence/` is enough.
 (The old CC-157 sandbox-referenced scan is removed: `settings.stanok.json` has no
 `sandbox.filesystem` deny entries — the Pod runs unsandboxed.)
 
@@ -46,8 +47,6 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 - Tracked files: `git rm -q -- <path>`.
 - Untracked files/dirs: `rm -rf <path>`.
 - Always keep `.gitkeep` in `src/`, `tests/`, `docs/` so the directories survive.
-- **After** deleting the contents of `evidence/`, ensure the directory exists:
-  `mkdir -p <submodule>/evidence` (the launch gate requires it, rc=28).
 
 ## 5. Commit (submodule first; parent pin discipline)
 - If a submodule was cleaned: `git -C <sub> add -A && git -C <sub> commit -m "chore: clean for new task — infra only"` (the `chore:` prefix is a maintenance convention only — no git hook enforces it).
@@ -64,5 +63,5 @@ Confirm the shown file list. **Do not delete until the user confirms.**
 `requirements.txt`, `image-requirements.lock`, `ARCHITECTURE.md`, `.venv/`,
 `CONTEXT.md`, `CLAUDE.supervisor.md`, `CLAUDE.md`, `Dockerfile`,
 `README.md`, `opik-traces.py`, `patches/`, `P0-launch.sh`, `.gitmodules`,
-`.gitignore`, `.claude/`, `tickets/.gitkeep`, `specs/.gitkeep`,
+`.gitignore`, `.claude/`, `tickets/.gitkeep`,
 and every `.gitkeep` file.

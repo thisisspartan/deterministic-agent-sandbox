@@ -27,15 +27,20 @@ infra) and a `TOTAL changes:` count. **Show the user this list.**
 ## 3. Ask how to proceed (AskUserQuestion)
 "Both repos" = the two DST repos: skeleton-pub (top) and its submodule.
 SRC (this repo) is READ-ONLY for the sync — never committed, never pushed.
-- (a) **Full sync** — apply + commit skeleton-pub (top + submodule) + push both to GitHub.
-- (b) **Local only** — apply + commit skeleton-pub (top + submodule), NO push.
+The mirror is LOCAL-ONLY by default (the script's default since 2026-10-13): the
+parent pushes its own published commits to GitHub, and the skeleton's sync commits
+intentionally diverge from that history — a push of a sync commit is usually
+REJECTED (incident 2026-10-13, parallel submodule commit e54f014).
+- (a) **Sync (local only)** — apply + commit skeleton-pub (top + submodule), NO push.
+- (b) **Sync + push** — same + push both to GitHub; bootstrap case only, expect a
+  rejection unless the histories genuinely match.
 Do not apply until the user chooses.
 
 ## 4. Apply
 Re-use the `SRC`/`DST` vars from step 2 (do NOT inline-assign them on the same
 line as the command — see the pitfall note in step 2).
 - (a): `"$SRC/.claude/sync-skeleton.sh"`
-- (b): `"$SRC/.claude/sync-skeleton.sh" --no-push`
+- (b): `"$SRC/.claude/sync-skeleton.sh" --push`
 
 Report the final status: the submodule + top-level commit SHAs and the push result
 (or "local only"). Do not read logs or poll.
