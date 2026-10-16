@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# stanok post-commit: auto-update the parent gitlink (operator decision 2026-10-16).
+# Installed as stanok/.git/hooks/post-commit (symlink to this file).
+# LOCAL commit only — push stays a manual operator decision (§0 unchanged).
+# Guards: superproject present; branch main; pin actually differs.
+set -u
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
+repo=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+parent=$(git -C "$repo" rev-parse --show-superproject-working-tree 2>/dev/null) || true
+[ -z "$parent" ] && exit 0
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+[ "$branch" = "main" ] || exit 0
+sha=$(git rev-parse HEAD 2>/dev/null) || exit 0
+rel="${repo#"$parent"/}"
+cur=$(git -C "$parent" rev-parse -q --verify "HEAD:$rel" 2>/dev/null) || true
+[ "$cur" = "$sha" ] && exit 0
+
+git -C "$parent" add -- "$rel" && \
+git -C "$parent" commit -q -m "pin: $rel ${cur:-none} -> ${sha} (auto, post-commit hook)" -- "$rel" || \
+echo "stanok post-commit hook: parent pin update FAILED (parent=$parent, sha=$sha)" >&2
+exit 0
