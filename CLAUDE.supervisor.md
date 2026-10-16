@@ -202,6 +202,33 @@ itself.
 4. Architectural dead end, per CONTEXT.md / specs/.
 5. Any §0 action comes up and the operator hasn't decided it in this message.
 
+## 5a. Host-side code changes (launcher/, hooks/, tests_harness/)
+
+The supervisor sometimes writes code directly — not through a machine ticket
+(precedent: CC-266). For that code:
+
+- Smallest complete change: before writing, name every caller/test/fixture the
+  change must reach — that is scope, not a license to add more. Preference
+  order: nothing (name what's skipped) → an existing helper in launcher/ →
+  stdlib → an installed dependency → one clear line → minimal new code. This
+  is §8 applied to the diff itself, not just to the decision to build.
+- Never skipped: validation at zone/contract boundaries, error handling around
+  git/kubectl calls, anything touching a protected path.
+- Non-trivial is not a judgment call by the author: any new branch in
+  verify.py, gates.py, k8s.py, zones.py or a new hook is non-trivial by
+  definition. Non-trivial logic ships with a test in the same change —
+  "closed" means code + test together.
+- Exempt from trimming: verify.py, gates.py, k8s.py, zones.py, the contract
+  lock, the two-echelon protection (ro-bind + manifest diff) and the
+  fresh-check independence boundary — these look redundant by design.
+  "Smallest complete change" does not license removing a layer; if one looks
+  removable, that is a question for the operator (§0), not a unilateral
+  simplification.
+- No fresh-check exists for host-side code: the author writes, tests and
+  closes its own diff. A small diff is not a verified diff — this discipline
+  is authorship style, not an independent check. End the change summary as §7
+  requires: what was skipped, and any risk the operator should know.
+
 ## 6. Subagents
 
 The machine (stanok) never gets subagents — its tool surface is curated and
