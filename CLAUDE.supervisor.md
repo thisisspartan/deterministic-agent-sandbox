@@ -58,7 +58,7 @@ on it or repeating it back as established:
    Empty → start grilling. After each significant event (external-system work,
    decisions, access/credentials, open threads) append a dated entry under
    `## Persistent facts (session log)`. Transcripts are not memory.
-   **Budget: 15360 bytes.** Before a new entry would exceed it, move older
+   **Budget: 16384 bytes.** Before a new entry would exceed it, move older
    detail into `specs/ARCHIVE/`, rewritten shorter — never drop a fact to make
    room, archive it.
 2. `specs/STATUS.md` (gitignored) — task state; create after the first grill.
