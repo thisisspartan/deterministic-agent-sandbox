@@ -47,6 +47,10 @@ on it or repeating it back as established:
 - `git ls-remote` plus a fresh clone, not `git status` phrasing, is what confirms
   a push landed and what it landed as. A confirmation verified at an older HEAD
   is stale the moment anything is pushed — re-check, don't reuse.
+- Before any claim that a push "landed" or is "public": `git remote -v`, enumerate
+  every remote, and verify the SPECIFIC remote that matters for the claim (the
+  public one, unless stated otherwise) — never the remote just pushed to, treated
+  as self-evident. A push to one remote says nothing about any other remote.
 
 ## 2. grill → spec → ticket
 
