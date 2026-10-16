@@ -8,14 +8,17 @@ finishes, verify `stanok/evidence/<label>/summary.json` (rc=0 + verifier=PASS �
 Arguments: `$ARGUMENTS` = `<ticket.md> <label>`. If either is missing, ask the user.
 
 ## 1. Pre-flight
-- ROOT = `git rev-parse --show-toplevel` (do NOT hardcode a path).
+- ROOT = the PARENT repo root, from wherever you are: `git rev-parse --show-superproject-working-tree`
+  (inside a submodule this prints the parent root; at the parent root it prints nothing) — if the
+  output is empty, fall back to `git rev-parse --show-toplevel`. Do NOT hardcode a path.
 - `git -C "$ROOT/stanok" status --porcelain` — if dirty, commit first
   (`git -C "$ROOT/stanok" add -A && git -C "$ROOT/stanok" commit -m "chore: save state before e2e"` — the `chore:` prefix is a maintenance convention only, no git hook enforces it);
   enforcement lives in one place — launch.sh's dirty-tree gate (rc=22).
 
 ## 2. Run (ONE command — no polling, no log reads while the machine runs)
-From ROOT, run with the Bash tool (`run_in_background: true`):
-    ./.claude/e2e.sh <ticket.md> <label>
+Run with the Bash tool (`run_in_background: true`), addressing the script via ROOT
+(e2e.sh resolves its own working dir from the script location — it works from any cwd):
+    "$ROOT/.claude/e2e.sh" <ticket.md> <label>
 It launches the machine with `--follow` (the SOLE background flag, CC-140/BL-1) and
 blocks inside the same call until the run is terminal, then prints the final verdict.
 Wait for the completion notification.
@@ -33,5 +36,5 @@ or
   read `stanok/evidence/<label>/summary.json` exactly ONCE.
 - If e2e.sh was interrupted but the machine still runs, re-attach with the native
   blocking wait — the same primitive `--follow` uses (CC-140), not a hand-rolled poll loop:
-      ./stanok/launch.sh wait <label>
+      "$ROOT/stanok/launch.sh" wait <label>
   (0 on any terminal state, 124 at the 45-min cap), then read summary.json once.

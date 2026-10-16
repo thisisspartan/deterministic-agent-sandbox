@@ -7,7 +7,9 @@ clean "infra-only" state for a new task: remove machine-generated code and run
 artifacts, keep all infrastructure. Work in whatever repo you are invoked in.
 
 ## 1. Locate the repo (path-agnostic)
-- `git rev-parse --show-toplevel` → the repo root.
+- `git rev-parse --show-superproject-working-tree` → the PARENT repo root (inside a
+  submodule this prints the parent root; at the parent root it prints nothing — then
+  fall back to `git rev-parse --show-toplevel`).
 - `git submodule status` → list submodules (e.g. `stanok/`).
 - Clean targets live in the repo root **and** in each submodule.
 
