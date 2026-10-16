@@ -10,9 +10,11 @@
 # (parent checkout + stanok submodule) — a stanok-only CI cannot run it.
 # Hardening per operator review 2026-10-13: -rs (skip reasons in the log),
 # runner pinned to ubuntu-24.04 (ubuntu-latest moves to Ubuntu 26 on
-# 2026-10-19), actions/checkout@v7 + actions/setup-python@v7 (node24
-# runtimes), explicit pytest preflight (the run.sh tests call
-# python3 -m pytest — a missing pytest must fail loudly before the suite).
+# 2026-10-19), actions/checkout + actions/setup-python pinned to exact
+# commit SHAs (v7 tags, resolved via git ls-remote 2026-10-16 — a tag is
+# movable, a SHA is not), least-privilege permissions, explicit pytest
+# preflight (the run.sh tests call python3 -m pytest — a missing pytest
+# must fail loudly before the suite).
 name: harness
 
 on:
@@ -22,17 +24,20 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   harness:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout parent + stanok submodule
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           submodules: true
 
       - name: Set up Python 3.11 (image-requirements.lock resolution)
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
           python-version: "3.11"
 

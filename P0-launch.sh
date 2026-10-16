@@ -50,6 +50,21 @@ done
 set -- "${ARGS[@]}"
 
 # ---------------------------------------------------------------------------
+# Per-value validation (external review 2026-10-16): every token limit must
+# be a positive integer. The former non-empty check accepted 0, negatives and
+# garbage — a bad value here poisons CLAUDE_CODE_* env and the launcher
+# preflight downstream. Covers the --tok override too.
+# ---------------------------------------------------------------------------
+for _var in TOK FILE_READ_OUT MCP_OUT MAX_OUT; do
+    _val="${!_var}"
+    if ! [[ "$_val" =~ ^[1-9][0-9]*$ ]]; then
+        printf 'ERROR: token limit %s=%s is not a positive integer (source: %s / --tok)\n' \
+            "$_var" "$_val" "$STANOK_SETTINGS" >&2
+        exit 1
+    fi
+done
+
+# ---------------------------------------------------------------------------
 # External constants (overridable via env)
 # ---------------------------------------------------------------------------
 SERVER_URL="${STANOK_SERVER_URL:-http://$HOST:8080}"
@@ -62,6 +77,54 @@ SEARCH_ENV_FILE="${SEARCH_ENV_FILE:-}"
 # STANOK_SERVER_URL / STANOK_PROXY from the environment (default 127.0.0.1).
 export STANOK_SERVER_URL="$SERVER_URL"
 export STANOK_PROXY="$PROXY"
+
+# ---------------------------------------------------------------------------
+# Preflight against the EFFECTIVE server (same semantics as the machine's
+# launcher preflight, for the interactive path): the required window (TOK)
+# must fit inside the server's live n_ctx — fail-closed; a model identity
+# mismatch is an explicit warning here, not a hard stop. STANOK_SKIP_SERVER_CHECK=1
+# skips, as in launcher/gates.py.
+# ---------------------------------------------------------------------------
+if [[ "${STANOK_SKIP_SERVER_CHECK:-}" != "1" ]]; then
+    if ! python3 - "$SERVER_URL" "$MODEL" "$TOK" <<'PY'
+import json, os, sys, urllib.request
+url, model, tok = sys.argv[1], sys.argv[2], int(sys.argv[3])
+try:
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(url.rstrip("/") + "/props", timeout=5) as resp:
+        props = json.loads(resp.read().decode("utf-8", "replace"))
+except Exception as e:
+    print(f"ERROR: cannot read {url}/props: {e}", file=sys.stderr)
+    sys.exit(1)
+n_ctx = (props.get("default_generation_settings") or {}).get("n_ctx")
+if not isinstance(n_ctx, int) or n_ctx <= 0:
+    print(f"ERROR: server {url} exposes no usable n_ctx", file=sys.stderr)
+    sys.exit(1)
+if n_ctx < tok:
+    print(f"ERROR: server n_ctx={n_ctx} < required window {tok} "
+          f"(--tok / settings CLAUDE_CODE_AUTO_COMPACT_WINDOW)", file=sys.stderr)
+    sys.exit(1)
+ids = []
+alias = props.get("model_alias")
+if isinstance(alias, str) and alias.strip():
+    ids.append(alias.strip())
+aliases = props.get("model_path_aliases")
+if isinstance(aliases, list):
+    ids.extend(a.strip() for a in aliases if isinstance(a, str) and a.strip())
+path = props.get("model_path")
+if isinstance(path, str) and path.strip():
+    stem = os.path.splitext(os.path.basename(path.strip()))[0]
+    if stem:
+        ids.append(stem)
+if ids and all(i.lower() != model.lower() for i in ids):
+    print(f"WARNING: server model {ids[0]!r} != configured STANOK_MODEL {model!r}",
+          file=sys.stderr)
+PY
+    then
+        exit 1
+    fi
+fi
+
 # ---------------------------------------------------------------------------
 # Local Anthropic-compatible endpoint
 # ---------------------------------------------------------------------------
@@ -88,6 +151,15 @@ if [[ "$HOST" == "127.0.0.1" ]]; then
     no_proxy="127.0.0.1,localhost"
 else
     no_proxy="$HOST,localhost,127.0.0.1"
+fi
+# The EFFECTIVE server host: when STANOK_SERVER_URL overrides to a host
+# other than $HOST (e.g. a LAN host), model traffic to it must
+# bypass the proxy too — no_proxy built from $HOST alone would proxy it.
+server_host="${SERVER_URL#*://}"
+server_host="${server_host%%/*}"
+server_host="${server_host%%:*}"
+if [[ -n "$server_host" && ",$no_proxy," != *",$server_host,"* ]]; then
+    no_proxy="$no_proxy,$server_host"
 fi
 # Machine-specific extra entries (e.g. a docker-host LAN IP) go here via env,
 # not in the script: the public skeleton carries no local addresses.

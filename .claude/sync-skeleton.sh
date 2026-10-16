@@ -21,6 +21,11 @@
 # removal loop in [2/4]); test_supervisor_zone_not_published (doctor) fails if
 # the parent tracks the core state files. test_context_md_budget skips when
 # CONTEXT.md is absent (public clone).
+# .mcp.json is in the same local-only class (machine-local absolute paths,
+# external review 2026-10-16): never copied, removed from DST if tracked;
+# the published template is .mcp.json.example. CLAUDE.supervisor.md is copied
+# RENDERED, never verbatim: render_role_file replaces the SRC root with the
+# placeholder <project-root>/ so the mirror carries no machine-local paths.
 #
 # The mirror is LOCAL-ONLY by default (fixed 2026-10-13): the parent pushes its
 # own published commits to GitHub, and the skeleton's sync/removal commits
@@ -52,6 +57,18 @@ for arg in "$@"; do
 done
 
 die() { echo "ERROR: $*" >&2; exit 1; }
+
+# Role-file mirror sanitization (external review 2026-10-16): CLAUDE.supervisor.md
+# carries THIS machine's absolute paths in the protocol text. The
+# public mirror must not publish them: the mirror gets the same text with the
+# SRC root replaced by the portable placeholder <project-root>/. Both the
+# classification and the apply path render through this function, so the diff
+# never reports a phantom MODIFY.
+render_role_file() {
+  local esc
+  esc=$(printf '%s' "$SRC" | sed 's/[][\\.^$*]/\\&/g')
+  sed "s|$esc/|<project-root>/|g" "$SRC/CLAUDE.supervisor.md"
+}
 
 # Commit message template (one source, used for BOTH commits): the message
 # carries the file count and the changed paths, not just a date — a bare
@@ -113,7 +130,10 @@ done
 # stale pre-split relic (399 lines, --background/PreToolUse-deny) that no sync
 # ever updated. The darkcast root README is the control-room template; its
 # darkcast-only entries are marked as such inline.
-top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md specs/STACKS.md patches/.gitignore)
+# .mcp.json is NOT synced (local-only, gitignored — machine-local absolute
+# paths); .mcp.json.example is the published portable template.
+# CLAUDE.supervisor.md is synced RENDERED (render_role_file), never verbatim.
+top_sync=(README.md P0-launch.sh .gitignore CLAUDE.supervisor.md .mcp.json.example specs/STACKS.md patches/.gitignore)
 mapfile -t claude_files < <(git -C "$SRC" ls-files .claude)
 top_sync+=("${claude_files[@]}")
 top_add=(); top_mod=(); top_rem=()
@@ -125,6 +145,10 @@ for f in "${top_sync[@]}"; do
   [[ -f "$SRC/$f" ]] || continue
   if [[ ! -f "$DST/$f" ]] || ! git -C "$DST" ls-files --error-unmatch "$f" >/dev/null 2>&1; then
     top_add+=("$f")
+  elif [[ "$f" == CLAUDE.supervisor.md ]]; then
+    # compare the RENDERED form against the mirror — the verbatim source
+    # always differs from it (placeholder), that is not a change.
+    render_role_file | diff -q - "$DST/$f" >/dev/null 2>&1 || top_mod+=("$f")
   elif ! diff -q "$SRC/$f" "$DST/$f" >/dev/null 2>&1; then
     top_mod+=("$f")
   fi
@@ -182,7 +206,11 @@ cd "$DST"
 for f in "${top_sync[@]}"; do
   if [[ -f "$SRC/$f" ]]; then
     mkdir -p "$(dirname "$f")"
-    cp "$SRC/$f" "$f"
+    if [[ "$f" == CLAUDE.supervisor.md ]]; then
+      render_role_file > "$f"
+    else
+      cp "$SRC/$f" "$f"
+    fi
     [[ "$f" == *.sh ]] && chmod +x "$f"
   fi
 done
@@ -198,7 +226,7 @@ done
 while IFS= read -r f; do
   [[ "$f" == specs/STACKS.md || "$f" == patches/.gitignore ]] && continue
   git rm -q -- "$f"
-done < <(git ls-files CONTEXT.md tickets specs/ archive/ patches/)
+done < <(git ls-files CONTEXT.md tickets specs/ archive/ patches/ .mcp.json)
 for f in "${top_rem[@]}"; do
   git rm -q -- "$f"
 done

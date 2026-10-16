@@ -28,3 +28,8 @@ archive/
 # the folder stays in the public tree via the patches/.gitignore placeholder
 patches/*
 !patches/.gitignore
+# .mcp.json: the LIVE MCP config — machine-local absolute paths (external
+# review 2026-10-16: it carried machine-local absolute paths in the
+# published tree).
+# Local-only; the portable template .mcp.json.example is the published one.
+.mcp.json
