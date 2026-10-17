@@ -228,7 +228,7 @@ fi
 MODEL_NAME="?"
 SERVER_CTX="?"
 SERVER_SLOTS="?"
-if [[ -n "${STANOK_SKIP_SERVER_CHECK:-}" ]]; then
+if [[ "${STANOK_SKIP_SERVER_CHECK:-}" == "1" ]]; then
     MODEL_LINE="? (server check skipped)"
 else
     PROPS="$(curl -s --noproxy '*' --max-time 5 "$SERVER_URL/props" 2>/dev/null || true)"
