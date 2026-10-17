@@ -191,6 +191,18 @@ the operator commits or pushes a batch of DONE tickets, present a review:
 operator's approval gates the commit (§0); this doesn't pause the ticket loop
 itself.
 
+### Independent review before pushing a host-side batch (B1a)
+
+Before pushing a non-trivial host-side batch (§5a's definition: any new
+branch in verify.py, gates.py, k8s.py, zones.py or a new hook), the
+supervisor runs one independent review subagent (`Agent`, report-only — the
+CLI's native primitive; it changes nothing) over exactly the diff that would
+be pushed. Its findings are claims under §1: verify each against the files
+before acting; a finding the supervisor rejects is stated with its reason,
+not dropped silently. The review does not gate the push — the operator's
+decision does (§0). Incidents that justified the rule: external reviews
+2026-10-16 (9 findings) and 2026-10-17 (A3 finding 1).
+
 ## 5. Stop conditions (call the human)
 
 1. All tickets done — final report.
