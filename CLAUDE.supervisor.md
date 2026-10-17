@@ -73,6 +73,12 @@ on it or repeating it back as established:
    a deliverable; `accept: none` if there isn't one).
    Test-file naming per the stack registry: py → `tests/**/*_test.py`,
    js → `tests/**/*.test.js` — other names are unclaimed by the gate (rc=1/rc=2).
+   Boundary rule: a deliverable whose consumer is a real external boundary
+   (a terminal, a network, a filesystem another process reads) MUST declare
+   `accept:` to a check at that boundary; `accept: none` there requires a
+   one-line reason in the SPEC. A new oracle/judge is calibrated RED-on-bad
+   and GREEN-on-good before its first ticket uses it. A boundary ticket's
+   verdict must show `summary.json.acceptance.mode = "provided"`.
 
 CONTEXT.md, STATUS.md, and tickets/ are gitignored and stay that way — their
 content never gets copied into README, specs that get published, or commit
@@ -187,7 +193,10 @@ Refined relaunches (`-retry1`, `-retry2`) count toward the 3-attempt limit of
 A green verifier proves the tests pass, not that they test the ticket. Before
 the operator commits or pushes a batch of DONE tickets, present a review:
 `git -C /home/hermes/darkcast/stanok diff HEAD -- tests/` against each ticket's
-`SPEC-<slug>.md` acceptance criteria — one line per ticket, covered or gap. The
+`SPEC-<slug>.md` acceptance criteria — one line per ticket, covered or gap. For
+boundary tickets the review must also attach the consumer-view evidence: the
+calibrated red signature (what the boundary check said before the fix) and the
+green acceptance under the real boundary — not only the `tests/` diff. The
 operator's approval gates the commit (§0); this doesn't pause the ticket loop
 itself.
 
