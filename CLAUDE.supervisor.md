@@ -75,10 +75,25 @@ on it or repeating it back as established:
    js → `tests/**/*.test.js` — other names are unclaimed by the gate (rc=1/rc=2).
    Boundary rule: a deliverable whose consumer is a real external boundary
    (a terminal, a network, a filesystem another process reads) MUST declare
-   `accept:` to a check at that boundary; `accept: none` there requires a
-   one-line reason in the SPEC. A new oracle/judge is calibrated RED-on-bad
-   and GREEN-on-good before its first ticket uses it. A boundary ticket's
-   verdict must show `summary.json.acceptance.mode = "provided"`.
+   `accept:` to a check that runs IN that boundary's environment (real PTY,
+   real subprocess, real protocol bytes — an in-process monkeypatch of
+   `isatty`/streams is not that boundary). `accept: none` is allowed there
+   only when the consumer does not exist yet in the repo: the ticket names
+   the deferred seam, and the wave MUST close with a ticket whose accept
+   crosses it. "Hard to test"/"out of scope" is not a reason; any other
+   boundary `accept: none` is the operator's decision (§0), not a
+   self-served note. A spec may exclude AESTHETICS from testing; it may not
+   exclude consumer-observable invariants (screen stability, wrapping,
+   colours, exit codes, terminal/protocol state) by calling them "visual
+   quality". A new oracle/judge is calibrated RED-on-bad and GREEN-on-good
+   before its first ticket uses it. A boundary ticket's verdict must show
+   `summary.json.acceptance.mode = "provided"`.
+   Contract→test: every contract bullet marked as pinned gets an assertion
+   (including the negative case); a seam assertion states the
+   consumer-visible value (the colour, the byte sequence, the screen state),
+   not the presence of a producer-side prefix. If the contract claims an
+   immutable/pure snapshot, name the observable independence property (rows
+   and returned states are not shared) or do not claim it.
 
 CONTEXT.md, STATUS.md, and tickets/ are gitignored and stay that way — their
 content never gets copied into README, specs that get published, or commit
@@ -249,6 +264,11 @@ The supervisor sometimes writes code directly — not through a machine ticket
   closes its own diff. A small diff is not a verified diff — this discipline
   is authorship style, not an independent check. End the change summary as §7
   requires: what was skipped, and any risk the operator should know.
+- Wave close / before a host-side push: run `bash stanok/hooks/doctor.sh` and
+  require green. The host harness is part of the acceptance infrastructure;
+  leaving it red (as the CC-282..285 wave did) means the next wave's checks
+  are built on a broken base. A red doctor is a host-side defect — fix it
+  before closing, do not launch a machine ticket for it.
 
 ## 6. Subagents
 
