@@ -215,6 +215,26 @@ green acceptance under the real boundary — not only the `tests/` diff. The
 operator's approval gates the commit (§0); this doesn't pause the ticket loop
 itself.
 
+### Trusted test artifacts (deployment parity, provenance, calibration)
+
+Before accepting a host-authored contract/accept test:
+
+- **Deployment parity.** If the test creates files, run it in a throwaway clone
+  of the base tree, not only in the lab. Afterwards `git status --porcelain` in
+  that clone must be empty and no test artifacts may remain. A green run proves
+  behavior, not tree cleanliness: leftover files trigger the dirty-tree gate
+  (rc=22) and block the next launch.
+- **Provenance.** Every expected literal must cite its host-authored source
+  (SPEC, signed fixture README) inline. If the only source is production code or
+  machine-authored docs, label the assertion `characterization`, not `contract` —
+  do not describe the file as fully spec-derived.
+- **Recalibration on edit.** Any edit to the body of a calibrated test
+  invalidates the calibration: rebuild the lab, rerun the reference and every
+  mutant, record the new signatures.
+- **No aggregate claims.** Report provenance and coverage as a per-item table
+  (claim → source → mutant → signature); no "all literals" or "everything
+  green" without it.
+
 ### Independent review before pushing a host-side batch (B1a)
 
 Before pushing a non-trivial host-side batch (§5a's definition: any new
