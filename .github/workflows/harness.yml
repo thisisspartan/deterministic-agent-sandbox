@@ -1,10 +1,14 @@
 # SPEC-CI-MINIMAL (specs/SPEC-CI-MINIMAL-2026-10-13.md): the harness
 # (stanok/launcher/tests_harness) must run green on a bare runner — no
 # k8s cluster, no docker, no jq, no repo .venv. The contract is the exact
-# SET of skipped tests (.github/ci-expected-skips.txt, pytest -rs locations):
-# the environment probes skip with reasons (skip-guards in the tests), and
-# ANY change of the set — a substitution at the same count included — fails
-# CI. The count (exactly 10) is kept as a secondary check.
+# SET of skipped-test nodeids (<path>.py::<test-name>, .github/
+# ci-expected-skips.txt; nodeid revision 2026-10-20 per operator decision:
+# extracted from the junit-xml by launcher/ci_skips.py — line numbers are
+# deliberately NOT part of the contract, editing a test file no longer
+# reddens CI by moving a skip statement): the environment probes skip with
+# reasons (skip-guards in the tests), and ANY change of the set — a
+# substitution at the same count included — fails CI. The count (exactly
+# 10) is kept as a secondary check.
 # The workflow lives in the PARENT repo: the guard test
 # test_supervisor_zone_not_published needs the published-parent layout
 # (parent checkout + stanok submodule) — a stanok-only CI cannot run it.
@@ -70,14 +74,15 @@ jobs:
           export PATH="$FARM"
           cd stanok
           rc=0
-          python -m pytest launcher/tests_harness -q -rs 2>&1 | tee "$GITHUB_WORKSPACE/pytest.log" || rc=$?
+          python -m pytest launcher/tests_harness -q -rs --junitxml="$GITHUB_WORKSPACE/skips.xml" 2>&1 | tee "$GITHUB_WORKSPACE/pytest.log" || rc=$?
           echo "pytest rc=$rc"
           skipped=$(grep -oE '[0-9]+ skipped' "$GITHUB_WORKSPACE/pytest.log" | tail -1 | grep -oE '[0-9]+' || echo 0)
           echo "skipped=$skipped (expected exactly 10)"
-          # Skip-set contract: extract the -rs locations (file:line) and diff
-          # against the expected list. A substitution at count 10 fails here.
-          grep -E '^SKIPPED' "$GITHUB_WORKSPACE/pytest.log" \
-            | sed -E 's/^SKIPPED \[[0-9]+\] ([^ ]+):.*/\1/' | sort > "$GITHUB_WORKSPACE/skipped-actual.txt"
+          # Skip-set contract: extract skipped-test nodeids from the junit-xml
+          # (launcher/ci_skips.py, fail-closed: an unresolvable testcase emits
+          # <unresolved> and the diff fails) and diff against the expected
+          # list. A substitution at count 10 fails here.
+          python -m launcher.ci_skips "$GITHUB_WORKSPACE/skips.xml" | sort > "$GITHUB_WORKSPACE/skipped-actual.txt"
           grep -vE '^[[:space:]]*(#|$)' "$GITHUB_WORKSPACE/.github/ci-expected-skips.txt" | sort > "$GITHUB_WORKSPACE/skipped-expected.txt"
           if ! diff -u "$GITHUB_WORKSPACE/skipped-expected.txt" "$GITHUB_WORKSPACE/skipped-actual.txt"; then
             echo "::error::skip-set contract violated: actual SKIPPED set differs from .github/ci-expected-skips.txt"
