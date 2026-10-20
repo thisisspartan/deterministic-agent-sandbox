@@ -12,6 +12,20 @@
 # The workflow lives in the PARENT repo: the guard test
 # test_supervisor_zone_not_published needs the published-parent layout
 # (parent checkout + stanok submodule) — a stanok-only CI cannot run it.
+# Python matrix (operator order 2026-10-20, ruff/mypy wave): the harness runs
+# green on 3.11 (the Pod image / floor) AND 3.13 (the host venv / upgrade
+# readiness). Both legs must produce the SAME 10-nodeid skip set — that is
+# why a non-3.11 leg installs a secondary 3.11 interpreter FIRST (the primary
+# setup comes after it, so `python` still resolves to the matrix version):
+# test_resource_peaks.test_py311_join_contract guards on
+# shutil.which("python3.11") — found it RUNS (published-set state), absent it
+# would skip; the secondary install keeps it running on every leg.
+# The lint tools (ruff==0.15.20 / mypy==2.2.0, pinned in stanok/
+# lint-requirements.lock — same uv/hashes format as image-requirements.lock)
+# are installed in THIS job, not in a separate lint job: test_lint_gates'
+# probes run where the tools are present and skip with a reason where not —
+# dropping the install would add two skips and redden the published skip-set
+# contract from the other side.
 # Hardening per operator review 2026-10-13: -rs (skip reasons in the log),
 # runner pinned to ubuntu-24.04 (ubuntu-latest moves to Ubuntu 26 on
 # 2026-10-19), actions/checkout + actions/setup-python pinned to exact
@@ -34,19 +48,31 @@ permissions:
 jobs:
   harness:
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
     steps:
       - name: Checkout parent + stanok submodule
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           submodules: true
 
-      - name: Set up Python 3.11 (image-requirements.lock resolution)
+      - name: Secondary interpreter 3.11 (skip-set parity across matrix legs)
+        if: matrix.python-version != '3.11'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
           python-version: "3.11"
 
+      - name: Set up Python ${{ matrix.python-version }} (image-requirements.lock resolution)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "${{ matrix.python-version }}"
+
       - name: Install pinned deps (uv-compiled, sha256-hashed lock)
         run: python -m pip install -r stanok/image-requirements.lock
+
+      - name: Install pinned lint tools (the ruff/mypy gates run via test_lint_gates)
+        run: python -m pip install -r stanok/lint-requirements.lock
 
       - name: Preflight — the interpreter has pytest
         run: python3 -m pytest --version
