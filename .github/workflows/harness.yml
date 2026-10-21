@@ -20,12 +20,13 @@
 # test_resource_peaks.test_py311_join_contract guards on
 # shutil.which("python3.11") — found it RUNS (published-set state), absent it
 # would skip; the secondary install keeps it running on every leg.
-# The lint tools (ruff==0.15.20 / mypy==2.2.0, pinned in stanok/
-# lint-requirements.lock — same uv/hashes format as image-requirements.lock)
-# are installed in THIS job, not in a separate lint job: test_lint_gates'
-# probes run where the tools are present and skip with a reason where not —
-# dropping the install would add two skips and redden the published skip-set
-# contract from the other side.
+# The lint tools (ruff==0.15.20 / mypy==2.2.0 / shellcheck-py==0.11.0.1,
+# pinned in stanok/ lint-requirements.lock — same uv/hashes format as
+# image-requirements.lock) are installed in THIS job, not in a separate lint
+# job: test_lint_gates' and test_shellcheck_gates' probes run where the
+# tools are present and skip with a reason where not — dropping the install
+# would add skips and redden the published skip-set contract from the other
+# side.
 # Hardening per operator review 2026-10-13: -rs (skip reasons in the log),
 # runner pinned to ubuntu-24.04 (ubuntu-latest moves to Ubuntu 26 on
 # 2026-10-19), actions/checkout + actions/setup-python pinned to exact
