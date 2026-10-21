@@ -11,10 +11,16 @@ the official nodejs.org tarball; python3 from the debian base). Anything the
 stack's test runner needs (interpreters, compilers, package managers) is
 baked in here — the image is hermetic, no host bind-mounts.
 
-## 2. `stanok/scripts/run.sh` — ONE registry line
+## 2. `stanok/scripts/stacks/<ext>.toml` — ONE manifest per stack
 
-The `STACKS` variable is the single stack extension point: exactly ONE line
-per stack, format
+The stack registry is DERIVED AT RUNTIME by `scripts/run.sh` from the
+per-stack TOML manifests in `scripts/stacks/` (keys `ext`, `test_glob`,
+`name_regex`, `test_runner`, `smoke_runner`, `preflight`, plus
+`verdict_config` — read by the launcher, not by run.sh). The manifests are
+the single source of truth: edit a manifest and it takes effect — there is
+no generated artifact to keep in sync. Adding a stack adds ONE manifest
+here; `scripts/run.sh` itself is never edited per stack. Derived line
+format:
 
 ```
 <ext>|<test-glob>|<name-regex>|<test-runner>|<smoke-runner>|<preflight>
@@ -29,10 +35,9 @@ per stack, format
   from the environment, NOT a red test.
 
 The test-runner, smoke-runner, find-glob and the usage text are all
-GENERATED from this registry — no other code change per stack. Current
-registry (must match the live `STACKS` block in
-`scripts/stacks.generated.sh`, generated from `scripts/stacks/*.toml` by
-`scripts/gen_stacks.sh` — doctor `test_stacks_md_matches_registry`):
+GENERATED from these manifests — no other code change per stack. Current
+derived registry (this block must match the live registry lines — doctor
+`test_stacks_md_matches_registry`):
 
 ```
 js|*.test.js|[A-Za-z0-9_-]+\.test\.js|node --test --test-force-exit|node|node --version
