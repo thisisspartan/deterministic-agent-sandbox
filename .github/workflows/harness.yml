@@ -119,3 +119,65 @@ jobs:
             echo "::error::harness contract violated: rc=$rc, skipped=$skipped (expected rc=0, exactly 10 skipped)"
             exit 1
           fi
+
+  # Coverage gate (operator order 2026-10-21): the suite currently covers 81%
+  # of the production modules (launcher/*.py, tests_harness excluded from the
+  # measurement); nothing else in the project protects that number from silent
+  # erosion by a later wave, so the gate enforces a floor just below the
+  # measured value. This job mirrors the harness 3.13 leg EXACTLY (same
+  # installs, same PATH farm, same secondary 3.11 interpreter) so the measured
+  # numbers are reproducible: a local bare-sim calibration run (tool coverage
+  # 7.16.2 pinned in stanok/cover-requirements.lock, identical install set)
+  # produced the same 726 passed / 10 skipped state and TOTAL 81%. The floor
+  # 78 is that baseline with a 3-point margin; calibration: --fail-under=90 on
+  # the same run is RED (rc=2), --fail-under=78 is GREEN (rc=0). Recalibrate
+  # (raise the floor) only after a measurement recorded in the commit message;
+  # a floor breach is a defect signal, not a knob to lower.
+  coverage:
+    runs-on: ubuntu-24.04
+    needs: harness
+    steps:
+      - name: Checkout parent + stanok submodule
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          submodules: true
+
+      - name: Secondary interpreter 3.11 (same environment as the 3.13 harness leg)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.11"
+
+      - name: Set up Python 3.13 (host parity — the gate measures the host venv state)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned deps (identical install set to the harness job)
+        run: |
+          python -m pip install -r stanok/image-requirements.lock
+          python -m pip install -r stanok/lint-requirements.lock
+          python -m pip install -r stanok/cover-requirements.lock
+
+      - name: Preflight — the interpreter has pytest
+        run: python3 -m pytest --version
+
+      - name: Measure coverage in the same bare environment as the harness leg
+        run: |
+          set -euo pipefail
+          FARM="$RUNNER_TEMP/barepath"
+          mkdir -p "$FARM"
+          IFS=:
+          for d in $PATH; do
+            [ -d "$d" ] || continue
+            for t in "$d"/*; do
+              [ -x "$t" ] || continue
+              n="${t##*/}"
+              case "$n" in docker|docker.io|docker-compose|jq|kubectl) continue ;; esac
+              [ -e "$FARM/$n" ] || [ -L "$FARM/$n" ] || ln -s "$t" "$FARM/$n" 2>/dev/null || true
+            done
+          done
+          unset IFS
+          export PATH="$FARM"
+          cd stanok
+          python -m coverage run --source=launcher -m pytest launcher/tests_harness -q
+          python -m coverage report --omit='launcher/tests_harness/*' --fail-under=78
