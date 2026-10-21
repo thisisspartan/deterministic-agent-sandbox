@@ -3,8 +3,10 @@
 *.launch.log
 /.claude/settings.local.json
 
-# supervisor zone: local-only, NEVER published (rule: .claude/sync-skeleton.sh;
-# pinned by test_supervisor_zone_not_published in stanok/launcher/tests_harness)
+# supervisor zone: local-only, NEVER published (the public tree is this repo's
+# tracked state pushed directly — the sync-skeleton mirror was retired
+# 2026-10-21; pinned by test_supervisor_zone_not_published in
+# stanok/launcher/tests_harness)
 CONTEXT.md
 # tickets: private (operator decision 2026-10-13) — the machine reads them from
 # this local directory; untracked from the public tree (history NOT rewritten —
