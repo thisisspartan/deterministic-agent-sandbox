@@ -101,11 +101,14 @@ messages on the public trees.
 
 ## 3. Gate before launching the machine (synchronous)
 
-Absolute paths only — supervisor shell cwd persists across Bash calls within a
+Absolute paths only — written as `<project-root>/…`: `<project-root>` is the
+project root, substituted with the real absolute root by P0-launch.sh when it
+injects this role (§3/§4 commands are absolute AT USE TIME; the tracked file
+stays path-agnostic). Supervisor shell cwd persists across Bash calls within a
 session; a relative path after a drifted cwd fails with exit 127 or
 `fatal: cannot change to`.
 
-1. `git -C /home/hermes/darkcast/stanok status --porcelain`
+1. `git -C <project-root>/stanok status --porcelain`
 2. Not empty → commit the machine's own tree (`chore: save state before ticket`).
    A local commit in the machine's tree is gate maintenance, not a §0 action —
    it is local and reversible; do not stop the loop to ask. State what you are
@@ -126,12 +129,12 @@ server, and a large supervisor context stalls the run.
 Two calls, in order, absolute paths:
 
 1. **Launch + wait, one Bash call, `run_in_background: true`:**
-   `/home/hermes/darkcast/stanok/launch.sh run /home/hermes/darkcast/tickets/TASK-STANOK-CC-NNN.md <label> --follow`
+   `<project-root>/stanok/launch.sh run <project-root>/tickets/TASK-STANOK-CC-NNN.md <label> --follow`
    `--follow` is the only way a background run produces a completion
    notification; without it nothing returns. The task completing is the trigger
    to read the verdict — nothing else is.
 2. **Read the result exactly once, after the notification:**
-   `/home/hermes/darkcast/stanok/evidence/<label>/summary.json`, via the Read tool (not
+   `<project-root>/stanok/evidence/<label>/summary.json`, via the Read tool (not
    TaskOutput — deprecated for this in the pinned CLI; use Read on the file
    path).
 
@@ -157,7 +160,7 @@ phase — check for it even when RED CONFIRMED fires.
 ### Worktree smoke runs
 
 Git worktrees are for SMOKE/negative runs only — working tickets run in the
-main `stanok/` checkout. Placement: `/home/hermes/darkcast/stanok-<label>`
+main `stanok/` checkout. Placement: `<project-root>/stanok-<label>`
 (next to `stanok/`, inside the project root — ticket resolution and the
 role-leak gate work there via `dirname(repo_root)`). Branch `smoke/<label>`.
 The run lock is shared: its key is the git common dir (`cli._lock_key`,
@@ -166,9 +169,9 @@ serialize (second gets rc=21). The host creates `evidence/<label>/` itself
 (`k8s.py`, `os.makedirs(..., exist_ok=True)`); `evidence/` is gitignored, the
 tree stays clean. The worktree has no `.venv` (`.venv/` ignores directories
 only — a symlink dirties the tree, rc=22): launch it with
-`STANOK_PY=/home/hermes/darkcast/stanok/.venv/bin/python`. After the run: copy
+`STANOK_PY=<project-root>/stanok/.venv/bin/python`. After the run: copy
 the whole `evidence/<label>/` to the main checkout FIRST (the durable proof
-must survive the worktree), then `git -C /home/hermes/darkcast/stanok worktree
+must survive the worktree), then `git -C <project-root>/stanok worktree
 remove --force <path>` (a §0 action), delete the branch, record the result in
 CONTEXT.md.
 
@@ -207,7 +210,7 @@ Refined relaunches (`-retry1`, `-retry2`) count toward the 3-attempt limit of
 
 A green verifier proves the tests pass, not that they test the ticket. Before
 the operator commits or pushes a batch of DONE tickets, present a review:
-`git -C /home/hermes/darkcast/stanok diff HEAD -- tests/` against each ticket's
+`git -C <project-root>/stanok diff HEAD -- tests/` against each ticket's
 `SPEC-<slug>.md` acceptance criteria — one line per ticket, covered or gap. For
 boundary tickets the review must also attach the consumer-view evidence: the
 calibrated red signature (what the boundary check said before the fix) and the

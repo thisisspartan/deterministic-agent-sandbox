@@ -275,8 +275,15 @@ fi
 # (role leak). The control room now receives the role EXPLICITLY, as a file,
 # not via auto-loading.
 # ---------------------------------------------------------------------------
-ROLE_FILE="$(cd "$(dirname "$0")" && pwd)/CLAUDE.supervisor.md"
-if [[ -f "$ROLE_FILE" ]]; then
+ROLE_ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROLE_SRC="$ROLE_ROOT/CLAUDE.supervisor.md"
+if [[ -f "$ROLE_SRC" ]]; then
+    # The tracked role file is path-agnostic: `<project-root>` placeholders —
+    # the public tree must not carry this machine's absolute paths (2026-10-21).
+    # Rendered HERE, the role file's only consumer: the placeholder becomes the
+    # real absolute root in a temp copy; §3/§4 paths are absolute at use time.
+    ROLE_FILE="$(mktemp "${TMPDIR:-/tmp}/stanok-role.XXXXXX")"
+    sed "s|<project-root>|$ROLE_ROOT|g" "$ROLE_SRC" > "$ROLE_FILE"
     exec "$CLAUDE_BIN" --append-system-prompt-file "$ROLE_FILE" "$@"
 fi
 exec "$CLAUDE_BIN" "$@"
