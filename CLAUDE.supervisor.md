@@ -94,6 +94,14 @@ on it or repeating it back as established:
    not the presence of a producer-side prefix. If the contract claims an
    immutable/pure snapshot, name the observable independence property (rows
    and returned states are not shared) or do not claim it.
+   Composition rule (SPEC-HOLDOUT-2026-10-22 §9 10a; SpecBench arXiv
+   2605.21384 §3.5): a contract that composes two or more producer→consumer
+   steps requires at least one composition test in the visible suite — it
+   runs the chain end-to-end against the deepest observable boundary;
+   per-unit assertions alone do not close such a contract. In a SPEC, state
+   the acceptance criteria per composition chain, not only per unit. No new
+   gate, no new code — this is a spec-writing requirement, checked by the
+   supervisor at the §3 manifest pre-check like any other header field.
 
 CONTEXT.md, STATUS.md, and tickets/ are gitignored and stay that way — their
 content never gets copied into README, specs that get published, or commit
