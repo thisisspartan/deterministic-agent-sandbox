@@ -7,7 +7,10 @@
 # no longer redden CI by moving a skip statement). The environment probes
 # skip with reasons (skip-guards in the tests), and ANY change of the set —
 # a substitution at the same count included — fails CI. The count (exactly
-# 10) is kept as a secondary check.
+# 11) is kept as a secondary check.
+# Revision 2026-10-22 (SPEC-DOCTOR-CLI-VERSION-2026-10-22): the CLI version
+# gate test_image_cli_version_matches_packaged_version was added under
+# _NO_DOCKER — the set and the secondary count went 10 -> 11.
 # Provenance of this list: generated 2026-10-20 by launcher/ci_skips.py over
 # a local CI-emulation run (fresh published-layout clone, Python 3.11 +
 # image-requirements.lock, docker/jq/kubectl hidden from PATH): "672 passed,
@@ -19,6 +22,7 @@
 launcher/tests_harness/test_doctor.py::test_context_md_budget
 launcher/tests_harness/test_doctor.py::test_docker_available
 launcher/tests_harness/test_doctor.py::test_docker_image_digest_matches
+launcher/tests_harness/test_doctor.py::test_image_cli_version_matches_packaged_version
 launcher/tests_harness/test_doctor.py::test_k8s_cluster_nodes_ready
 launcher/tests_harness/test_doctor.py::test_kubectl_available
 launcher/tests_harness/test_doctor.py::test_machine_image_built
